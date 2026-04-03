@@ -7,6 +7,7 @@ type Props = {
   style?: ViewStyle;
   icon?: React.ComponentType<{ size?: number; color?: string }>;
   iconPosition?: "left" | "right";
+  disabled?: boolean;
 };
 
 export default function ButtonComponent({
@@ -15,6 +16,7 @@ export default function ButtonComponent({
   style,
   icon: IconComponent,
   iconPosition = "left",
+  disabled = false,
 }: Props) {
   return (
     <Pressable
@@ -24,6 +26,7 @@ export default function ButtonComponent({
         style,
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <View style={styles.content}>
         {IconComponent && iconPosition === "left" && (
