@@ -4,13 +4,14 @@ import { View, StyleSheet, ScrollView } from "react-native";
 import { MasterComponentItem, FormState } from "@/typings/types/form.types";
 import MasterFormItem from "./MasterFormItem";
 import ButtonComponent from "../ButtonComponent";
-import { FileCheck } from "lucide-react-native";
+import { Ban, FileCheck } from "lucide-react-native";
 import { Validator } from "@/utils/validation/validator";
 
 interface MasterFormProps {
   fields: MasterComponentItem[];
   initialValues?: { [key: string]: any };
   onSubmit?: (values: { [key: string]: any }) => void;
+  onCancel?: () => void;
   onChange?: (values: { [key: string]: any }, isValid: boolean) => void;
   containerStyle?: object;
 }
@@ -19,6 +20,7 @@ const FormComponent: React.FC<MasterFormProps> = ({
   fields,
   initialValues = {},
   onSubmit,
+  onCancel,
   onChange,
   containerStyle,
 }) => {
@@ -118,6 +120,12 @@ const FormComponent: React.FC<MasterFormProps> = ({
     }
   };
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
   const renderFields = (fieldsList: MasterComponentItem[]) => {
     return fieldsList.map((field, index) => (
       <MasterFormItem
@@ -137,14 +145,33 @@ const FormComponent: React.FC<MasterFormProps> = ({
     <ScrollView style={[styles.container, containerStyle]}>
       <View style={styles.form}>
         {renderFields(fields)}
-        {onSubmit && (
-          <ButtonComponent
-            onPress={handleSubmit}
-            title="Đồng ý"
-            icon={FileCheck}
-            disabled={!formState.isValid}
-          />
-        )}
+
+        <View style={styles.buttonContainer}>
+          {onCancel && (
+            <View style={styles.buttonWrapper}>
+              <ButtonComponent
+                onPress={handleCancel}
+                title="Hủy"
+                icon={Ban}
+                variant="outline"
+                color="#FF3B30" // Màu đỏ
+                textColor="#FF3B30"
+              />
+            </View>
+          )}
+
+          {onSubmit && (
+            <View style={styles.buttonWrapper}>
+              <ButtonComponent
+                onPress={handleSubmit}
+                title="Đồng ý"
+                icon={FileCheck}
+                variant="primary" // Mặc định là primary màu tím
+                disabled={!formState.isValid}
+              />
+            </View>
+          )}
+        </View>
       </View>
     </ScrollView>
   );
@@ -157,6 +184,15 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: 16,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 24,
+    gap: 12,
+  },
+  buttonWrapper: {
+    flex: 1,
   },
 });
 

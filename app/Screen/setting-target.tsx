@@ -46,6 +46,10 @@ export default function SettingTarget() {
     console.log("Form submitted:", values);
     // Gọi API ở đây
   };
+  const handleCancel = () => {
+    console.log("Form cancelled");
+    // Xử lý khi người dùng hủy form, ví dụ: reset form hoặc điều hướng đi nơi khác
+  };
 
   const handleChange = (values: any, isValid: boolean) => {
     console.log("Form changed:", values, "Valid:", isValid);
@@ -57,6 +61,7 @@ export default function SettingTarget() {
         fields={formFields}
         onSubmit={handleSubmit}
         onChange={handleChange}
+        onCancel={handleCancel}
       />
     </View>
   );
