@@ -1,0 +1,13 @@
+export const GENDER = {
+  MALE: 0,
+  FEMALE: 1,
+  OTHER: 2,
+};
+
+export enum ACTIVITY_LEVEL {
+  SEDENTARY = 0,
+  LIGHTLY_ACTIVE = 1,
+  MODERATELY_ACTIVE = 2,
+  VERY_ACTIVE = 3,
+  EXTREMELY_ACTIVE = 4,
+}
