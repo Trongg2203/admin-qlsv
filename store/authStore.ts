@@ -75,10 +75,20 @@ export const useAuthStore = create<AuthState>()(
               user_type: 0,
               is_admin: false,
             });
+          } else if (response.code === 401 || response.code === 500) {
+            set({
+              token: null,
+              user: null,
+              isLoggedIn: false,
+              user_type: 0,
+              is_admin: false,
+            });
           }
         } catch (error) {
           console.log(error);
         } finally {
+          await AsyncStorage.removeItem(AUTH_TOKEN_NAME);
+          await AsyncStorage.removeItem(AUTH_TOKEN_REMEMBER);
           set({ loading: false });
         }
         // persist middleware sẽ tự động xóa khỏi AsyncStorage

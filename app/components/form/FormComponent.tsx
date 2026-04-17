@@ -6,6 +6,7 @@ import MasterFormItem from "./MasterFormItem";
 import ButtonComponent from "../ButtonComponent";
 import { Ban, FileCheck } from "lucide-react-native";
 import { Validator } from "@/utils/validation/validator";
+import MasterFormRow from "./MasterFormRow";
 
 interface MasterFormProps {
   fields: MasterComponentItem[];
@@ -126,25 +127,25 @@ const FormComponent: React.FC<MasterFormProps> = ({
     }
   };
 
-  const renderFields = (fieldsList: MasterComponentItem[]) => {
-    return fieldsList.map((field, index) => (
-      <MasterFormItem
-        key={`${field.model}-${index}`}
-        field={field}
-        value={formState.values[field.model]}
+  
+  const renderFields = () => {
+    return (
+      <MasterFormRow
+        fields={fields} // Truyền toàn bộ fields, không phải từng field
+        values={formState.values}
         onChange={handleChange}
         onBlur={handleBlur}
         errors={formState.errors}
         touched={formState.touched}
         formValues={formState.values}
       />
-    ));
+    );
   };
 
   return (
     <ScrollView style={[styles.container, containerStyle]}>
       <View style={styles.form}>
-        {renderFields(fields)}
+        {renderFields()}
 
         <View style={styles.buttonContainer}>
           {onCancel && (

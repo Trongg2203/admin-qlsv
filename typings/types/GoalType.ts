@@ -1,0 +1,5 @@
+export enum GOALTYPE {
+  LOSE_WEIGHT = 0,
+  GAIN_WEIGHT = 1,
+  MAINTAIN_WEIGHT = 2,
+}

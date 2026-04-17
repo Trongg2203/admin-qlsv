@@ -11,7 +11,7 @@ import ChipComponent from "../components/ChipComponent";
 import { GENDER } from "@/typings/types/UserType";
 import { genderType, getActivityLabel } from "@/utils/formalHelpers";
 import InfoListComponent from "../components/InfoListComponent";
-import { LogOut } from "lucide-react-native";
+import { LogOut, Settings } from "lucide-react-native";
 import { ScrollView } from "react-native";
 import { FieldItem } from "@/typings/types/FieldItem";
 import { useRouter } from "expo-router";
@@ -68,14 +68,12 @@ export default function ProfileScreen() {
       children: [
         {
           label: "Thiết lập mục tiêu",
+          value: <Settings size={16} />,
           onPress: () => {
             router.push("/Screen/setting-target");
           },
         },
-        {
-          label: "Chi tiết",
-          expand: () => <Text>Chi tiết sâu hơn...</Text>,
-        },
+        
       ],
     },
   ];

@@ -10,6 +10,7 @@ import {
 } from "@/typings/interfaces/result/apiResult";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 import axios, {
   AxiosInstance,
@@ -74,8 +75,8 @@ class Http {
     } = error;
     const originalRequest = config;
 
-    if (status === 401 && window.location.href.indexOf("/login") == -1) {
-      const is_remember = AsyncStorage.getItem(AUTH_TOKEN_REMEMBER);
+    if (status === 401) {
+      const is_remember = await AsyncStorage.getItem(AUTH_TOKEN_REMEMBER);
       if (is_remember != null) {
         try {
           axios
@@ -93,7 +94,7 @@ class Http {
             )
             .then((response) => {
               const data = response.data;
-              if (data.code == 200 && data.data != null) {
+              if (data.code === 200 && data.data != null) {
                 const token = data.data?.access_token;
                 AsyncStorage.setItem(AUTH_TOKEN_NAME, token);
                 this.instance.defaults.headers.common.Authorization = `Bearer ${token}`;
@@ -107,7 +108,7 @@ class Http {
             });
         } catch (err) {
           this.subscribers.forEach((callback) => callback(null));
-          window.location.href = "/login";
+          router.replace("/(auth)/LoginScreen");
         } finally {
           this.subscribers = [];
         }
@@ -149,9 +150,19 @@ class Http {
       // RedirectLoginAndResetParam();
       return;
     }
-    const data = error.response?.data as ApiResult;
-    // const errorStore = useErrorStore();
-    // errorStore.setError(true, [data.message ?? "An error occured"]);
+    const message = error.response?.data?.message;
+
+    if (
+      message === "Token could not be parsed from the request." ||
+      message === "Token has expired" ||
+      message === "Token is invalid"
+    ) {
+      AsyncStorage.removeItem(AUTH_TOKEN_NAME);
+      AsyncStorage.removeItem(AUTH_TOKEN_REMEMBER);
+      router.replace("/(auth)/LoginScreen");
+
+      return Promise.reject(error);
+    }
     return Promise.reject(error);
   }
 

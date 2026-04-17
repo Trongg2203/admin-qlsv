@@ -5,6 +5,10 @@ import { View, StyleSheet } from "react-native";
 import InputComponent from "../InputComponent";
 import PasswordComponent from "../PasswordComponent";
 import ButtonComponent from "../ButtonComponent";
+import CheckBoxComponent from "../CheckBoxComponent";
+import InputCurrentcyComponent from "../InputCurrentcyCommponent";
+import InputDecimalComponent from "../InputDecimal";
+import DatePickerComponent from "../DatePickerComponent";
 interface MasterFormItemProps {
   field: MasterComponentItem;
   value: any;
@@ -38,10 +42,16 @@ const MasterFormItem: React.FC<MasterFormItemProps> = ({
     switch (field.type) {
       case "InputComponent":
         return <InputComponent {...commonProps} />;
-        case "PasswordComponent":
-          return <PasswordComponent {...commonProps} />;
-      //   case "MasterLabel":
-      //     return <MasterLabel {...commonProps} />;
+      case "PasswordComponent":
+        return <PasswordComponent {...commonProps} />;
+      case "CheckBoxComponent":
+        return <CheckBoxComponent {...commonProps} />;
+      case "InputCurrentcyComponent":
+        return <InputCurrentcyComponent {...commonProps} />;
+      case "InputDecimalComponent":
+        return <InputDecimalComponent {...commonProps} />;
+      case "DatePickerComponent":
+        return <DatePickerComponent {...commonProps} />;
       //   case "MasterCheckbox":
       //     return <MasterCheckbox {...commonProps} />;
       //   case "MasterRadio":
@@ -52,15 +62,15 @@ const MasterFormItem: React.FC<MasterFormItemProps> = ({
       //     return <MasterDatePicker {...commonProps} />;
       //   case "MasterTextarea":
       //     return <MasterTextarea {...commonProps} />;
-        case "ButtonComponent":
-          return (
-            <ButtonComponent
-              title={field.info?.label ?? ""}
-              onPress={() => {
-                /* handle button press logic here if needed */
-              }}
-            />
-          );
+      case "ButtonComponent":
+        return (
+          <ButtonComponent
+            title={field.info?.label ?? ""}
+            onPress={() => {
+              /* handle button press logic here if needed */
+            }}
+          />
+        );
       default:
         return <InputComponent {...commonProps} />;
     }

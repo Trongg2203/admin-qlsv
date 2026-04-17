@@ -24,7 +24,14 @@ export interface ValidationRule {
 }
 
 export interface MasterComponentItem {
-  type: "InputComponent" | "PasswordComponent" | "ButtonComponent";
+  type:
+    | "DatePickerComponent"
+    | "InputDecimalComponent"
+    | "InputCurrentcyComponent"
+    | "CheckBoxComponent"
+    | "InputComponent"
+    | "PasswordComponent"
+    | "ButtonComponent";
   column?: number;
   model: string;
   class?: string;
@@ -49,6 +56,8 @@ export interface MasterComponentItem {
     format?: string;
     rows?: number;
     validationRules?: ValidationRule[];
+    direction?: "row" | "column";
+    mode?: "date" | "time" | "datetime";
     [key: string]: any;
   };
   children?: MasterComponentItem[];

@@ -1,17 +1,26 @@
 import http from "@/api/http";
+import { useErrorStore } from "@/store/errorStore";
 import { ApiResultGeneric } from "@/typings/interfaces/result/apiResult";
 
 class BaseService {
+  constructor(private handleError?: (message?: string) => void) {}
   async post<T>(_url: string, data: T) {
     let result = false;
     try {
       const response = await http.post<ApiResultGeneric<T>>(_url, data);
       if (response && response.code === 200 && response.data != null) {
         result = true;
+        // Clear error khi thành công
+        useErrorStore.getState().clearError();
+      } else if (response && response.code !== 200) {
+        // Set error khi có lỗi từ response
+        useErrorStore.getState().setError(response?.message || "Có lỗi xảy ra");
       }
     } catch (error) {
       console.log(error);
-      return null;
+      // Set error từ exception
+      useErrorStore.getState().setErrorFromException(error);
+      return false;
     }
     return result;
   }
@@ -23,9 +32,13 @@ class BaseService {
       const response = await http.post<ApiResultGeneric<T>>(_url, data);
       if (response && response.code === 200 && response.data != null) {
         result = true;
+        useErrorStore.getState().clearError();
+      } else {
+        useErrorStore.getState().setError(response?.message || "Có lỗi xảy ra");
       }
     } catch (err) {
       console.log(err);
+      useErrorStore.getState().setErrorFromException(err);
     }
     return result;
   }
@@ -37,6 +50,20 @@ class BaseService {
       const response = await http.get<ApiResultGeneric<T>>(
         `${_url}/${id ?? ""}`,
       );
+      if (response && response.code === 200 && response.data != null) {
+        result = response.data ?? {};
+      }
+    } catch (err) {
+      console.log(err);
+    }
+    return result;
+  }
+
+  async getSingleWithOutSlug<T>(_url: string) {
+    let result: T | null = null;
+
+    try {
+      const response = await http.get<ApiResultGeneric<T>>(`${_url}`);
       if (response && response.code === 200 && response.data != null) {
         result = response.data ?? {};
       }
