@@ -1,59 +1,60 @@
-import { useAuthStore } from "@/store/authStore";
+import {
+  View,
+  Text,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  StyleSheet,
+  TextInput,
+  Pressable,
+} from "react-native";
+import LinkComponent from "../components/LinkComponent";
+import {
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  LogInIcon,
+  Mail,
+  SendIcon,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import ButtonComponent from "../components/ButtonComponent";
 import { useLoadingStore } from "@/store/loadingStore";
 import { useUserStore } from "@/store/userStore";
-import { useRouter } from "expo-router";
-import { Eye, EyeOff, LockKeyhole, LogInIcon, Mail } from "lucide-react-native";
-import * as React from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import ButtonComponent from "../components/ButtonComponent";
-import LinkComponent from "../components/LinkComponent";
+import { router } from "expo-router";
 
-export default function LoginScreen() {
+function ForgotPassword() {
   const [email, setEmail] = React.useState("admin@gmail.com");
   const [showPassword, setShowPassword] = React.useState(true);
   const [password, setPassword] = React.useState("123456");
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = React.useState(true);
 
-  // store
   const loading = useLoadingStore();
-  const authStore = useAuthStore();
-  const router = useRouter();
-  const userForgotResponse = useUserStore((state) => state.userForgotResponse);
-  const clearForgotResponse = useUserStore(
-    (state) => state.clearForgotResponse,
-  );
+  const userStore = useUserStore();
 
-  React.useEffect(() => {
-    if (userForgotResponse) {
-      console.log("userForgotResponse", userForgotResponse);
-      setEmail(userForgotResponse.email);
-      setPassword(userForgotResponse.password);
-      setShowPassword(false);
-      // clearForgotResponse();
-    }
-  }, [userForgotResponse, clearForgotResponse]);
-
-  async function onLogin() {
+  async function handleForgotPassword() {
     try {
       loading.setLoading(true);
-      await authStore.login(email, password);
-      clearForgotResponse();
-      router.replace("/(app)/HomeScreen");
+
+      let data = {
+        email,
+        password,
+        new_password: newPassword,
+      };
+
+      const response = await userStore.forgotPassword(data);
+      if (response) {
+        console.log("Password reset successful");
+
+        router.replace("/(auth)/LoginScreen");
+      }
     } catch (error) {
       console.log(error);
-    } finally {
-      // Đảm bảo loading luôn được tắt
-      loading.setLoading(false);
     }
+
+    loading.setLoading(false);
   }
 
   return (
@@ -77,10 +78,7 @@ export default function LoginScreen() {
                 <LockKeyhole size={28} color="#f8f8f8" />
               </View>
 
-              <Text style={styles.title}>Đăng nhập</Text>
-              <Text style={styles.subtitle}>
-                Hãy đăng nhập để sự dụng hệ thống
-              </Text>
+              <Text style={styles.title}>Quên mật khẩu</Text>
             </View>
 
             {/* Card */}
@@ -106,7 +104,7 @@ export default function LoginScreen() {
 
               {/* Password */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>Mật cũ</Text>
 
                 <View style={styles.inputWrapper}>
                   <View style={styles.icon}>
@@ -134,18 +132,43 @@ export default function LoginScreen() {
                 </View>
               </View>
 
-              {/* Forgot password */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Mật khẩu mới</Text>
+
+                <View style={styles.inputWrapper}>
+                  <View style={styles.icon}>
+                    <LockKeyhole size={16} color="#6b7280" />
+                  </View>
+
+                  <TextInput
+                    style={styles.input}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry={showNewPassword}
+                  />
+
+                  {/* icon phải */}
+                  <Pressable
+                    style={styles.eyeIcon}
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? (
+                      <EyeOff size={18} color="#6b7280" />
+                    ) : (
+                      <Eye size={18} color="#6b7280" />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+
               <View style={styles.forgotWrapper}>
-                <LinkComponent
-                  href="/(auth)/ForgotPassword"
-                  text="Quên mật khẩu"
-                />
+                <LinkComponent href="/(auth)/LoginScreen" text="Đăng nhập" />
               </View>
 
               <ButtonComponent
-                title="Đăng nhập"
-                icon={LogInIcon}
-                onPress={onLogin}
+                title="Xác nhận"
+                icon={SendIcon}
+                onPress={handleForgotPassword}
               />
             </View>
 
@@ -303,3 +326,5 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(107, 78, 255, 0.07)",
   },
 });
+
+export default ForgotPassword;

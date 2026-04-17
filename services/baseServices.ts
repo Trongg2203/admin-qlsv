@@ -25,6 +25,29 @@ class BaseService {
     return result;
   }
 
+  async create<TRequest, TResponse = TRequest>(
+    _url: string,
+    data: TRequest,
+  ): Promise<TResponse | null> {
+    let result: TResponse | null = null;
+
+    try {
+      const response = await http.post<ApiResultGeneric<TResponse>>(_url, data);
+      if (response && response.code === 200 && response.data != null) {
+        result = response.data;
+        useErrorStore.getState().clearError();
+      } else {
+        useErrorStore.getState().setError(response?.message || "Có lỗi xảy ra");
+      }
+    } catch (error) {
+      console.log(error);
+      useErrorStore.getState().setErrorFromException(error);
+      return null;
+    }
+
+    return result;
+  }
+
   async update<T>(_url: string, data: T): Promise<boolean> {
     let result = false;
 

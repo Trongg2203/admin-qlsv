@@ -27,6 +27,7 @@ export const API = {
   USER: {
     DETAIL: "/api/user/detail",
     PROFILE: "/api/user/profile",
+    FORGOT_PASSWORD: "/api/user/forgot-password",
   },
   USER_GOAL: {
     CREATE: "/api/user-goal/create",
