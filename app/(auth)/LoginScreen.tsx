@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonComponent from "../components/ButtonComponent";
 import LinkComponent from "../components/LinkComponent";
+import { useErrorStore } from "@/store/errorStore";
 
 export default function LoginScreen() {
   const [email, setEmail] = React.useState("admin@gmail.com");
@@ -31,10 +32,10 @@ export default function LoginScreen() {
   const clearForgotResponse = useUserStore(
     (state) => state.clearForgotResponse,
   );
+  const errorStore = useErrorStore();
 
   React.useEffect(() => {
     if (userForgotResponse) {
-      console.log("userForgotResponse", userForgotResponse);
       setEmail(userForgotResponse.email);
       setPassword(userForgotResponse.password);
       setShowPassword(false);
@@ -45,13 +46,14 @@ export default function LoginScreen() {
   async function onLogin() {
     try {
       loading.setLoading(true);
-      await authStore.login(email, password);
+
+      const isSuccess = await authStore.login(email, password);
+
+      if (!isSuccess) return; //  không chuyển trang
+
       clearForgotResponse();
       router.replace("/(app)/HomeScreen");
-    } catch (error) {
-      console.log(error);
     } finally {
-      // Đảm bảo loading luôn được tắt
       loading.setLoading(false);
     }
   }
@@ -85,6 +87,13 @@ export default function LoginScreen() {
 
             {/* Card */}
             <View style={styles.card}>
+              {errorStore.errorMessage && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>
+                    {errorStore.errorMessage}
+                  </Text>
+                </View>
+              )}
               {/* Email */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email</Text>
@@ -301,5 +310,19 @@ const styles = StyleSheet.create({
     bottom: -80,
     left: -100,
     backgroundColor: "rgba(107, 78, 255, 0.07)",
+  },
+
+  // error
+
+  errorBox: {
+    backgroundColor: "#fee2e2",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+
+  errorText: {
+    color: "#dc2626",
+    fontSize: 13,
   },
 });

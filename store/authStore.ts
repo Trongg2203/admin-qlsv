@@ -2,13 +2,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import authService from "@/services/authService";
-import {
-  API,
-  AUTH_TOKEN_NAME,
-  AUTH_TOKEN_REMEMBER,
-} from "@/constants/constants";
-import { IUserDetail } from "@/typings/interfaces/user/user";
-import { useUserStore } from "./userStore";
+import { AUTH_TOKEN_NAME, AUTH_TOKEN_REMEMBER } from "@/constants/constants";
+import { useErrorStore } from "./errorStore";
 
 interface User {
   id: string;
@@ -22,27 +17,27 @@ interface AuthState {
   token: string | null;
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       token: null,
       user_type: 0,
       is_admin: false,
       user: null,
       isLoggedIn: false,
       loading: false,
-      userDetail: null,
 
       login: async (email: string, password: string) => {
         try {
           set({ loading: true });
+
           const res = await authService.login({ email, password });
 
-          if (res?.data) {
+          if (res.code === 200) {
             set({
               token: res.data.access_token,
               isLoggedIn: true,
@@ -51,15 +46,21 @@ export const useAuthStore = create<AuthState>()(
               loading: false,
             });
 
-            AsyncStorage.setItem(AUTH_TOKEN_NAME, res.data.access_token);
-            AsyncStorage.setItem(AUTH_TOKEN_REMEMBER, "true");
+            await AsyncStorage.setItem(AUTH_TOKEN_NAME, res.data.access_token);
+            await AsyncStorage.setItem(AUTH_TOKEN_REMEMBER, "true");
 
-            console.log("Login successful:", res.data.access_token);
+            return true;
           }
+
+          if (res.code === 401) {
+            useErrorStore.getState().setError(res.message || "Unauthorized");
+          }
+
+          return false;
         } catch (error) {
           set({ loading: false });
           console.log("Login error:", error);
-          throw error;
+          return false; // ❗ không throw nữa, để UI handle
         }
       },
 

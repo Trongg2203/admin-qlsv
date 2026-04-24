@@ -23,6 +23,7 @@ export const API = {
     LOGIN: "/api/auth/login",
     LOGOUT: "/api/auth/logout",
     REFRESH: "",
+    REGISTER:"/api/auth/register",
   },
   USER: {
     DETAIL: "/api/user/detail",

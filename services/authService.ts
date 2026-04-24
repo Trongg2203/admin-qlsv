@@ -9,20 +9,24 @@ import { LoggedIn } from "@/typings/interfaces/auth/login";
 
 class AuthService extends BaseService {
   async login(data: { email: string; password: string }) {
-    let result = null;
     try {
-      result = await http.post<ApiResultGeneric<LoggedIn>>(
+      const result = await http.post<ApiResultGeneric<LoggedIn>>(
         API.AUTH.LOGIN,
         data,
       );
-    } catch (error) {
-      result = {
-        code: 500,
-        message: "An error occured",
-      };
-    }
 
-    return result;
+      return result; // thành công
+    } catch (error: any) {
+      console.log("error", error);
+
+      return (
+        error?.response?.data || {
+          code: 500,
+          message: "Có lỗi xảy ra",
+          data: null,
+        }
+      );
+    }
   }
 
   async logout() {
