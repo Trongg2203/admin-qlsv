@@ -1,9 +1,11 @@
 import { Stack } from "expo-router";
-import { useEffect } from "react";
+import { createRef, useEffect } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { Platform } from "react-native";
 import GlobalLoading from "./components/UI/GlobalLoading";
 import ToastManager from "toastify-react-native/components/ToastManager";
+
+const toastRef = createRef<any>();
 
 export default function RootLayout() {
   useEffect(() => {
@@ -36,6 +38,10 @@ export default function RootLayout() {
     };
   }, []);
 
+  useEffect(() => {
+    ToastManager.setRef(toastRef);
+  }, []);
+
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
@@ -44,6 +50,7 @@ export default function RootLayout() {
       </Stack>
       <GlobalLoading />
       <ToastManager
+        ref={toastRef}
         position="top" // 'top', 'bottom'
         duration={3000}
       />

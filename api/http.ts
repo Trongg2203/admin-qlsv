@@ -9,8 +9,10 @@ import {
   ApiResultGeneric,
 } from "@/typings/interfaces/result/apiResult";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// ❌ Xóa dòng import này
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { Platform } from "react-native";
 
 import axios, {
   AxiosInstance,
@@ -19,39 +21,52 @@ import axios, {
 } from "axios";
 import { Toast } from "toastify-react-native";
 
+// ✅ Import storage wrapper
+import AsyncStorage from "@/utils/webStorage";
+
 type CallbackQueue = ((token: string | null) => void)[];
+
+const isWeb = Platform.OS === "web";
 
 class Http {
   private instance: AxiosInstance;
   private subscribers: CallbackQueue = [];
+  private isRefreshing = false;
+
   constructor(baseURL: string) {
-    // locale = i18n.global.locale;
     this.instance = axios.create({
       baseURL,
       headers: {
         "Content-Type": "application/json",
         "X-CLIENT-REQUEST": "HERO",
-        Authorization: `Bearer ${AsyncStorage.getItem(AUTH_TOKEN_NAME)}`,
       },
     });
-    this.instance.interceptors.request.use(this.handleBeforeRequest.bind(this));
 
+    this.instance.interceptors.request.use(this.handleBeforeRequest.bind(this));
     this.instance.interceptors.response.use(
-      this.handleSuccess,
+      this.handleSuccess.bind(this),
       this.handleRequestError.bind(this),
     );
   }
 
-  private async handleBeforeRequest(request: InternalAxiosRequestConfig) {
-    // const errorStore = useErrorStore();
-    // errorStore.clear();
-    //
-    request.headers.Authorization = `Bearer ${await AsyncStorage.getItem(
-      AUTH_TOKEN_NAME,
-    )}`;
+  private async getToken(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(AUTH_TOKEN_NAME);
+    } catch (error) {
+      console.error("Error getting token:", error);
+      return null;
+    }
+  }
 
-    //set default locale for each request
-    // request.headers["X-CLIENT-LANGUAGE"] = i18n.global.locale.value;
+  private async handleBeforeRequest(request: InternalAxiosRequestConfig) {
+    try {
+      const token = await this.getToken();
+      if (token) {
+        request.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error("Error setting auth header:", error);
+    }
     return request;
   }
 
@@ -59,132 +74,153 @@ class Http {
     return response;
   }
 
-  private async handleRequestError(error: any) {
-    //Network ERROR
-    if (error.code === "ERR_NETWORK") {
-      Toast.error(
-        "Lỗi mạng xin vui lòng thử lại",
-        POSITION_TOAST.TOP,
-        "close-outline",
+  private async refreshToken(): Promise<string | null> {
+    try {
+      const token = await this.getToken();
+      if (!token) return null;
+
+      const is_remember = await AsyncStorage.getItem(AUTH_TOKEN_REMEMBER);
+      if (!is_remember) return null;
+
+      const response = await axios.post<ApiResultGeneric<LoggedIn>>(
+        `${process.env.EXPO_PUBLIC_BASE_URL}${API.AUTH.REFRESH}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CLIENT-REQUEST": "HERO",
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
-      return;
+
+      const data = response.data;
+      if (data.code === 200 && data.data) {
+        const newToken = data.data.access_token;
+        await AsyncStorage.setItem(AUTH_TOKEN_NAME, newToken);
+        return newToken;
+      }
+      return null;
+    } catch (error) {
+      console.error("Refresh token error:", error);
+      return null;
     }
-    const {
-      config,
-      response: { status },
-    } = error;
+  }
+
+  private async handleRequestError(error: any) {
+    // Network ERROR
+    if (error.code === "ERR_NETWORK") {
+      if (!isWeb) {
+        Toast.error(
+          "Lỗi mạng xin vui lòng thử lại",
+          POSITION_TOAST.TOP,
+          "close-outline",
+        );
+      } else {
+        console.error("Network error:", error);
+      }
+      return Promise.reject(error);
+    }
+
+    // Nếu không có response (lỗi khác)
+    if (!error.response) {
+      return Promise.reject(error);
+    }
+
+    const { config, response } = error;
+    const status = response?.status;
     const originalRequest = config;
 
-    if (status === 401) {
-      const is_remember = await AsyncStorage.getItem(AUTH_TOKEN_REMEMBER);
-      if (is_remember != null) {
-        try {
-          axios
-            .get<ApiResultGeneric<LoggedIn>>(
-              process.env.EXPO_BASE_URL + API.AUTH.REFRESH,
-              {
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-CLIENT-REQUEST": "HERO",
-                  Authorization: `Bearer ${AsyncStorage.getItem(
-                    AUTH_TOKEN_NAME,
-                  )}`,
-                },
-              },
-            )
-            .then((response) => {
-              const data = response.data;
-              if (data.code === 200 && data.data != null) {
-                const token = data.data?.access_token;
-                AsyncStorage.setItem(AUTH_TOKEN_NAME, token);
-                this.instance.defaults.headers.common.Authorization = `Bearer ${token}`;
-                this.subscribers.forEach((callback) => callback(token));
-              }
-            })
-            .catch((err) => {
-              console.log(err);
-              // RemoveToken();
-              // RedirectLogin();
-            });
-        } catch (err) {
-          this.subscribers.forEach((callback) => callback(null));
-          router.replace("/(auth)/LoginScreen");
-        } finally {
-          this.subscribers = [];
+    // Xử lý 401 Unauthorized
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const newToken = await this.refreshToken();
+
+        if (newToken) {
+          // Cập nhật token mới
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return this.instance(originalRequest);
+        } else {
+          // Không thể refresh, logout
+          await this.logout();
+          return Promise.reject(error);
         }
-        // Trả về một hàm callback để gọi lại API đã bị lỗi 401 trước đó
-        return new Promise((resolve, reject) => {
-          this.subscribers.push((token) => {
-            if (token) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-              resolve(axios(originalRequest)); // Gọi lại API đã bị lỗi 401
-            } else {
-              reject(error);
-            }
-          });
-        });
-      } else {
-        // toast.error(i18n.global.t("token_expired"), {
-        //     autoClose: false,
-        //     closeButton: true,
-        //     closeOnClick: true,
-        // });
-        // RemoveToken();
-        // RedirectLogin();
+      } catch (refreshError) {
+        await this.logout();
+        return Promise.reject(refreshError);
       }
     }
 
-    //not permission
+    // Xử lý 403 Forbidden
     if (status === 403) {
-      AsyncStorage.setItem("isToastNotPermission", "true");
-      const currentPath = window.location.pathname;
-      AsyncStorage.setItem("PATH", currentPath);
-      // Toast.error(i18n.global.t("permission_denied"), {
-      //     autoClose: false,
-      //     closeButton: true,
-      //     closeOnClick: true,
-      // });
-
-      // useSettingStore().permission = false;
-      // RemoveToken();
-      // RedirectLoginAndResetParam();
-      return;
+      if (!isWeb) {
+        await AsyncStorage.setItem("isToastNotPermission", "true");
+        const currentPath = isWeb ? window.location.pathname : "";
+        await AsyncStorage.setItem("PATH", currentPath);
+        Toast.error(
+          "Bạn không có quyền truy cập",
+          POSITION_TOAST.TOP,
+          "close-outline",
+        );
+      }
+      await this.logout();
+      return Promise.reject(error);
     }
-    const message = error.response?.data?.message;
 
+    // Xử lý lỗi token
+    const message = response?.data?.message;
     if (
       message === "Token could not be parsed from the request." ||
       message === "Token has expired" ||
       message === "Token is invalid"
     ) {
-      AsyncStorage.removeItem(AUTH_TOKEN_NAME);
-      AsyncStorage.removeItem(AUTH_TOKEN_REMEMBER);
-      router.replace("/(auth)/LoginScreen");
-
+      await this.logout();
       return Promise.reject(error);
     }
+
     return Promise.reject(error);
+  }
+
+  private async logout() {
+    try {
+      await AsyncStorage.removeItem(AUTH_TOKEN_NAME);
+      await AsyncStorage.removeItem(AUTH_TOKEN_REMEMBER);
+      router.replace("/(auth)/LoginScreen");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   }
 
   // GET request
   public async get<T>(url: string, params?: any): Promise<T> {
-    this.instance.defaults.headers["Content-Type"] = "application/json";
     const response = await this.instance.get<T>(url, { params });
     return response.data;
   }
 
   // POST request
   public async post<T>(url: string, data: any): Promise<T> {
-    this.instance.defaults.headers["Content-Type"] = "application/json";
     const response = await this.instance.post<T>(url, data);
     return response.data;
   }
 
-  // POST request
+  // POST request with file
   public async postWithFile<T>(url: string, data: any): Promise<T> {
-    this.instance.defaults.headers["Content-Type"] = "multipart/form-data";
-    const response = await this.instance.post<T>(url, data);
-    this.instance.defaults.headers["Content-Type"] = "application/jsons";
+    const formData = new FormData();
+
+    // Convert data to FormData
+    Object.keys(data).forEach((key) => {
+      if (data[key] !== undefined && data[key] !== null) {
+        formData.append(key, data[key]);
+      }
+    });
+
+    const response = await this.instance.post<T>(url, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   }
 
@@ -200,17 +236,19 @@ class Http {
     return response.data;
   }
 
-  // GET request
+  // Export file
   public async ExportFile<T>(url: string): Promise<T> {
     const response = await this.instance.get(url, { responseType: "blob" });
     return response.data;
   }
 
+  // Export PDF
   public async ExportFileToPDF<T>(url: string): Promise<T> {
     const response = await this.instance.get(url, { responseType: "blob" });
     return response.data;
   }
 
+  // Export with data
   public async ExportFileWithData<T>(url: string, data: any[]): Promise<T> {
     const response = await this.instance.request({
       method: "POST",
@@ -221,4 +259,5 @@ class Http {
     return response.data;
   }
 }
+
 export default new Http(process.env.EXPO_PUBLIC_BASE_URL as string);

@@ -1,6 +1,10 @@
 import { API } from "@/constants/constants";
 import userService from "@/services/userService";
-import { IUserDetail, IUserProfile } from "@/typings/interfaces/user/user";
+import {
+  IUserDetail,
+  IUserProfile,
+  User,
+} from "@/typings/interfaces/user/user";
 import { create } from "zustand";
 
 interface IUserForgotResponse {
@@ -16,12 +20,15 @@ interface UserState {
   getUserProfile: () => Promise<void>;
   forgotPassword: (data: any) => Promise<boolean>;
   clearForgotResponse: () => void;
+  UsersList: User[];
+  getList: (query?: Record<string, string | number | null>) => Promise<void>;
 }
 
 export const useUserStore = create<UserState>()((set, get) => ({
   userDetail: null,
   userProfile: null,
   userForgotResponse: null,
+  UsersList: [],
 
   fetchUserDetail: async () => {
     try {
@@ -79,5 +86,15 @@ export const useUserStore = create<UserState>()((set, get) => ({
 
   clearForgotResponse: () => {
     set({ userForgotResponse: null });
+  },
+
+  getList: async (query) => {
+    const response = await userService.getListWithPagination<User>(
+      API.USER.LIST,
+      query,
+    );
+    if (response) {
+      set({ UsersList: response.data });
+    }
   },
 }));

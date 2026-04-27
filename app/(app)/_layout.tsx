@@ -1,15 +1,15 @@
-import { Tabs, Redirect } from "expo-router";
 import { useAuthStore } from "@/store/authStore";
-import { House, User, CalendarCheck2 } from "lucide-react-native";
+import { Redirect, Tabs } from "expo-router";
+import { CalendarCheck2, House, User } from "lucide-react-native";
 import {
-  StyleSheet,
   Platform,
-  View,
-  TouchableOpacity,
+  StyleSheet,
   Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useUserStore } from "@/store/userStore";
+import WebSidebarNavigation from "../components/navigation/WebSidebarNavigation";
 
 // Custom Tab Bar Component
 function CustomTabBar({ state, descriptors, navigation }: any) {
@@ -79,7 +79,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
 export default function AppLayout() {
   const { isLoggedIn } = useAuthStore();
-  const { fetchUserDetail } = useUserStore();
+  const isWeb = Platform.OS === "web";
 
   if (!isLoggedIn) {
     return <Redirect href="/(auth)/LoginScreen" />;
@@ -87,9 +87,16 @@ export default function AppLayout() {
 
   return (
     <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={(props) =>
+        isWeb ? (
+          <WebSidebarNavigation {...props} />
+        ) : (
+          <CustomTabBar {...props} />
+        )
+      }
       screenOptions={{
         headerShown: true,
+        tabBarPosition: isWeb ? "left" : "bottom",
       }}
     >
       <Tabs.Screen

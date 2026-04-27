@@ -5,7 +5,6 @@ import { profileCss } from "@/assets/css/profile.styles";
 import { baseCss } from "@/assets/css/basecss.style";
 import { useLoadingStore } from "@/store/loadingStore";
 import { useUserStore } from "@/store/userStore";
-import { DividerComponent } from "../components/DividerComponent";
 import { formatHeight, formatWeight, shortName } from "@/utils/helpers";
 import ChipComponent from "../components/ChipComponent";
 import { GENDER } from "@/typings/types/UserType";
@@ -15,6 +14,7 @@ import { LogOut, Settings } from "lucide-react-native";
 import { ScrollView } from "react-native";
 import { FieldItem } from "@/typings/types/FieldItem";
 import { useRouter } from "expo-router";
+import DividerComponent from "../components/DividerComponent";
 
 export default function ProfileScreen() {
   const router = useRouter();

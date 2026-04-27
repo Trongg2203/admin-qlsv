@@ -24,5 +24,40 @@ export interface IUserProfile extends BaseInterface<string> {
   bmi: number | null;
   bmi_category: string | null;
   activity_level: number; // 0-4
-  user:IUserDetail
+  user: IUserDetail;
+}
+
+// user list
+export interface User extends BaseInterface<string> {
+  id: string;
+  code: string;
+  name: string;
+  email: string;
+
+  phone: string | null;
+  birthday: string | null;
+
+  avatar: string | null;
+  gender: number | null; // nếu backend trả 0/1/2 thì để number
+
+  address: string | null;
+
+  status: boolean;
+  type: number;
+
+  cccd: string | null;
+
+  role: number;
+  account_status: number;
+
+  email_verified_at: string | null;
+  rejection_reason: string | null;
+
+  last_login_at: string | null;
+
+  created_at: string;
+  created_by: string;
+
+  updated_at: string;
+  updated_by: string;
 }

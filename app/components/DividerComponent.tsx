@@ -26,7 +26,7 @@ interface DividerProps {
   style?: ViewStyle;
 }
 
-export const DividerComponent: React.FC<DividerProps> = ({
+const DividerComponent: React.FC<DividerProps> = ({
   variant = "horizontal",
   styleType = "solid",
   length = "100%",
@@ -68,3 +68,4 @@ export const DividerComponent: React.FC<DividerProps> = ({
 
   return <View style={[getDividerStyle(), style]} />;
 };
+export default DividerComponent;
