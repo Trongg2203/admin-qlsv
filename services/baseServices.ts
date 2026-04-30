@@ -32,15 +32,19 @@ class BaseService {
     let result = false;
     try {
       const response = await http.post<ApiResultGeneric<T>>(_url, data);
-      if (response && response.code === 200 && response.data != null) {
+      if (
+        response &&
+        (response.code === 200 || response.code === 201) &&
+        response.data != null
+      ) {
         result = true;
         useErrorStore.getState().clearError();
-      } else if (response && response.code !== 200) {
+      } else if (response && (response.code !== 200 || 201)) {
         useErrorStore.getState().setError(response?.message || "Có lỗi xảy ra");
       }
     } catch (error) {
       console.log(error);
-      useErrorStore.getState().setErrorFromException(error);
+      useErrorStore.getState().setError(error);
       return false;
     }
     return result;
@@ -73,7 +77,7 @@ class BaseService {
     let result = false;
 
     try {
-      const response = await http.post<ApiResultGeneric<T>>(_url, data);
+      const response = await http.put<ApiResultGeneric<T>>(_url, data);
       if (response && response.code === 200 && response.data != null) {
         result = true;
         useErrorStore.getState().clearError();

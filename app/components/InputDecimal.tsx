@@ -45,9 +45,6 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
     const num = typeof val === "string" ? parseFloat(val) : val;
     if (isNaN(num)) return "";
 
-    // Nếu value là 0 thì trả về rỗng
-    if (num === 0) return "";
-
     const decimalPlaces = info.decimalPlaces ?? 2;
     let formatted = num.toFixed(decimalPlaces);
 
@@ -85,11 +82,11 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
 
     // Xử lý trường hợp chỉ có dấu chấm hoặc dấu trừ
     if (cleaned === ".") {
-      return 0; // . -> 0
+      return null; // Trả về null thay vì 0
     }
 
     if (cleaned === "-.") {
-      return 0; // -. -> 0
+      return null; // Trả về null thay vì 0
     }
 
     // Xử lý trường hợp bắt đầu bằng dấu chấm (.8 -> 0.8)
@@ -120,8 +117,28 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
     return isNaN(num) ? null : num;
   }
 
+  // Validate giá trị với min/max
+  const validateValue = (num: number | null): number | null => {
+    if (num === null) return null;
+    
+    let finalValue = num;
+    
+    // Giới hạn min
+    if (info.min !== undefined && finalValue < info.min) {
+      finalValue = info.min;
+    }
+    // Giới hạn max
+    if (info.max !== undefined && finalValue > info.max) {
+      finalValue = info.max;
+    }
+    
+    // Làm tròn theo decimalPlaces
+    const decimalPlaces = info.decimalPlaces ?? 2;
+    return Number(finalValue.toFixed(decimalPlaces));
+  };
+
   const handleChangeText = (text: string) => {
-    // Nếu text rỗng, xóa toàn bộ
+    // Nếu text rỗng, cho phép xóa trắng
     if (text === "") {
       setDisplayValue("");
       onChange(null);
@@ -144,23 +161,15 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
     const number = parseToNumber(text);
 
     if (number !== null) {
-      // Giới hạn min/max
-      let finalValue = number;
-      if (info.min !== undefined && finalValue < info.min) {
-        finalValue = info.min;
+      const validatedValue = validateValue(number);
+      if (validatedValue !== null) {
+        const formatted = formatDisplayValue(validatedValue);
+        setDisplayValue(formatted);
+        onChange(validatedValue);
+      } else {
+        setDisplayValue(text);
+        onChange(null);
       }
-      if (info.max !== undefined && finalValue > info.max) {
-        finalValue = info.max;
-      }
-
-      // Làm tròn theo decimalPlaces
-      const decimalPlaces = info.decimalPlaces ?? 2;
-      const rounded = Number(finalValue.toFixed(decimalPlaces));
-
-      // Format lại giá trị hiển thị
-      const formatted = formatDisplayValue(rounded);
-      setDisplayValue(formatted);
-      onChange(rounded);
     } else {
       // Nếu không parse được số, vẫn hiển thị text người dùng nhập
       setDisplayValue(text);
@@ -169,13 +178,28 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
   };
 
   const handleBlur = () => {
-    // Khi blur, format lại số nếu có giá trị
-    if (value !== null && value !== undefined && value !== "") {
+    // Khi blur, xử lý giá trị rỗng
+    if (value === null || value === undefined || value === "") {
+      // Nếu field là required, có thể set giá trị min
+      if (info.required && info.min !== undefined) {
+        const defaultValue = info.min;
+        const formatted = formatDisplayValue(defaultValue);
+        setDisplayValue(formatted);
+        onChange(defaultValue);
+      } else {
+        setDisplayValue("");
+        onChange(null);
+      }
+    } else {
+      // Nếu có giá trị, format lại
       const formatted = formatDisplayValue(value);
       setDisplayValue(formatted);
-    } else {
-      setDisplayValue("");
-      onChange(null);
+      
+      // Validate lại với min/max
+      const validatedValue = validateValue(value);
+      if (validatedValue !== null && validatedValue !== value) {
+        onChange(validatedValue);
+      }
     }
 
     if (onBlur) {

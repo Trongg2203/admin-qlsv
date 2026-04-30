@@ -1,47 +1,68 @@
-import {
-  API,
-  GOALSTATUS,
-  STATUS,
-  STATUS_COMPLETED,
-} from "@/constants/constants";
+import { GOALSTATUS, STATUS, STATUS_COMPLETED } from "@/constants/constants";
+import settingTargetService from "@/services/settingTargetService";
+import { useErrorStore } from "@/store/errorStore";
 import { useLoadingStore } from "@/store/loadingStore";
 import { useSettingTargetStore } from "@/store/settingTargetStore";
 import { CreateSettingTarget } from "@/typings/interfaces/settingTarget/settingTarget";
 import { DateFormat } from "@/typings/types/DateType";
 import { MasterComponentItem } from "@/typings/types/form.types";
 import { GOALTYPE } from "@/typings/types/GoalType";
-import { scale } from "@/utils/responsive";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
-import FromComponent from "../components/form/FormComponent";
-import { getCurrentDate } from "@/utils/dateHelpers";
-import settingTargetService from "@/services/settingTargetService";
-import { useErrorStore } from "@/store/errorStore";
-import ErrorDialog from "../components/UI/ErrorDialog";
-import { Toast } from "toastify-react-native";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
+import { addDays, getCurrentDate } from "@/utils/dateHelpers";
+import { scale } from "@/utils/responsive";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Toast } from "toastify-react-native";
+import ButtonComponent from "../components/ButtonComponent";
+import FromComponent from "../components/form/FormComponent";
+import ErrorDialog from "../components/UI/ErrorDialog";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function SettingTarget() {
   const loadingStore = useLoadingStore();
-  const router = useRouter();
   const settingTargetStore = useSettingTargetStore();
 
   const { hasError, clearError } = useErrorStore();
   const [showErrorDialog, setShowErrorDialog] = useState(false);
 
-  const [isAdd, setIsAdd] = useState(false);
+  const [isAdd, setIsAdd] = useState(true);
+  const [goalId, setGoalId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [goals, setGoals] = useState<CreateSettingTarget[]>([]);
 
   const initialValue: CreateSettingTarget = {
     user_id: "",
     goal_type: GOALTYPE.GAIN_WEIGHT,
-    target_date: getCurrentDate(),
+    target_date: addDays(getCurrentDate(), 1),
     status: GOALSTATUS.ACTIVE,
     is_completed: STATUS_COMPLETED.INCOMPLETE,
     is_active: STATUS.ACTIVE,
     start_weight: 70,
     target_weight: 65,
     start_date: getCurrentDate(),
+    weekly_change_rate: 0.5,
+  };
+
+  const [formData, setFormData] = useState<CreateSettingTarget>(initialValue);
+
+  const goalTypeLabel: Record<number, string> = {
+    [GOALTYPE.LOSE_WEIGHT]: "Giảm cân",
+    [GOALTYPE.GAIN_WEIGHT]: "Tăng cân",
+    [GOALTYPE.MAINTAIN_WEIGHT]: "Duy trì",
+  };
+
+  const goalStatusLabel: Record<number, string> = {
+    [GOALSTATUS.ACTIVE]: "Đang hoạt động",
+    [GOALSTATUS.PAUSED]: "Tạm dừng",
+    [GOALSTATUS.COMPLETED]: "Đã đạt",
+    [GOALSTATUS.ANBANDONED]: "Bị hủy",
   };
 
   const formFields: MasterComponentItem[] = [
@@ -96,9 +117,6 @@ export default function SettingTarget() {
         required: true,
         mode: "date",
         format: DateFormat.DATE,
-        placeholder: "Chọn ngày bắt đầu",
-        minDate: new Date(2020, 0, 1),
-        maxDate: new Date(2025, 11, 31),
       },
     },
     {
@@ -110,7 +128,18 @@ export default function SettingTarget() {
         required: true,
         mode: "date",
         format: DateFormat.DATE,
-        placeholder: "Chọn ngày mục tiêu",
+      },
+    },
+    {
+      type: "InputDecimalComponent",
+      column: 12,
+      model: "weekly_change_rate",
+      info: {
+        label: "Tốc độ thay đổi mỗi tuần (kg)",
+        required: true,
+        decimalPlaces: 2,
+        min: 0.1,
+        max: 1.0,
       },
     },
     {
@@ -119,9 +148,6 @@ export default function SettingTarget() {
       model: "is_active",
       info: {
         label: "Mục tiêu theo dõi",
-        required: false,
-        direction: "row",
-        returnType: "single",
         options: [{ label: "Đang hoạt động", value: STATUS.ACTIVE }],
       },
     },
@@ -131,9 +157,6 @@ export default function SettingTarget() {
       model: "is_completed",
       info: {
         label: "Đã đạt mục tiêu",
-        required: false,
-        direction: "row",
-        returnType: "single",
         options: [{ label: "Chưa đạt", value: STATUS_COMPLETED.INCOMPLETE }],
       },
     },
@@ -143,9 +166,6 @@ export default function SettingTarget() {
       model: "status",
       info: {
         label: "Trạng thái mục tiêu",
-        required: false,
-        direction: "row",
-        returnType: "single",
         options: [
           { label: "Chưa đạt", value: GOALSTATUS.ACTIVE },
           { label: "Tạm dừng", value: GOALSTATUS.PAUSED },
@@ -156,13 +176,68 @@ export default function SettingTarget() {
     },
   ];
 
+  const normalizeGoal = (goal: CreateSettingTarget) => {
+    return {
+      ...initialValue,
+      ...goal,
+    };
+  };
+
+  const handleDeleteGoal = (goal: CreateSettingTarget) => {
+    Alert.alert(
+      "Xác nhận xóa",
+      `Bạn có chắc chắn muốn xóa mục tiêu ${goal.start_weight}kg → ${goal.target_weight}kg?`,
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            loadingStore.setLoading(true);
+            try {
+              const success = await settingTargetService.delete("/api/goals/", [goal.id as string]);
+              if (success) {
+                Toast.success(
+                  "Xóa mục tiêu thành công",
+                  POSITION_TOAST.TOP,
+                  "checkmark-circle-outline",
+                );
+                await fetchGoals(); // Refresh danh sách sau khi xóa
+              }
+            } catch (error) {
+              console.log(error);
+              Toast.error(
+                "Xóa mục tiêu thất bại",
+                POSITION_TOAST.TOP,
+                "close-circle-outline",
+              );
+            } finally {
+              loadingStore.setLoading(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const handleSubmit = async (values: any) => {
     loadingStore.setLoading(true);
-    console.log("Form submitted:", values);
+
     try {
-      const response = isAdd
-        ? await settingTargetService.post(API.USER_GOAL.CREATE, values)
-        : await settingTargetService.post(API.USER_GOAL.UPDATE, values);
+      let response;
+
+      if (isAdd) {
+        response = await settingTargetService.post("/api/goals/", values);
+      } else {
+        response = await settingTargetService.update(
+          `/api/goals/${goalId}`,
+          values,
+        );
+      }
 
       if (response) {
         Toast.success(
@@ -170,33 +245,60 @@ export default function SettingTarget() {
           POSITION_TOAST.TOP,
           "checkmark-circle-outline",
         );
+
         setTimeout(() => {
-          handleCancel();
+          setShowForm(false);
+          setGoalId(null);
+          setIsAdd(true);
+          fetchGoals();
         }, 1000);
-        // handleCancel();
       }
     } catch (error) {
       console.log(error);
     }
+
     loadingStore.setLoading(false);
-    // Gọi API ở đây
   };
 
   const handleCancel = () => {
-    router.back();
+    setShowForm(false);
   };
 
-  useEffect(() => {
-    const testAPI = async () => {
-      loadingStore.setLoading(true);
-      const response = await settingTargetStore.getBySelf(
-        API.USER_GOAL.GET_BY_SELF,
-      );
-      loadingStore.setLoading(false);
-      return response ? setIsAdd(false) : setIsAdd(true);
-    };
+  const handleAdd = () => {
+    setIsAdd(true);
+    setGoalId(null);
+    setFormData(initialValue);
+    setShowForm(true);
+  };
 
-    testAPI();
+  const handleEdit = (goal: CreateSettingTarget) => {
+    setIsAdd(false);
+    setGoalId(goal.id ?? null);
+    setFormData(normalizeGoal(goal));
+    setShowForm(true);
+  };
+
+  const fetchGoals = useCallback(async () => {
+    loadingStore.setLoading(true);
+
+    const response = await settingTargetStore.getBySelf("/api/goals/");
+    loadingStore.setLoading(false);
+
+    let list: CreateSettingTarget[] = [];
+
+    if (Array.isArray(response)) {
+      list = response as CreateSettingTarget[];
+    } else if (Array.isArray(response?.data)) {
+      list = response.data as CreateSettingTarget[];
+    } else if (Array.isArray(response?.data?.data)) {
+      list = response.data.data as CreateSettingTarget[];
+    }
+
+    setGoals(list);
+  }, [loadingStore, settingTargetStore]);
+
+  useEffect(() => {
+    fetchGoals();
   }, []);
 
   const handleCloseError = () => {
@@ -205,40 +307,87 @@ export default function SettingTarget() {
   };
 
   useEffect(() => {
-    if (hasError) {
-      setShowErrorDialog(true);
-    }
+    if (hasError) setShowErrorDialog(true);
   }, [hasError]);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        marginHorizontal: scale(8),
-        marginVertical: scale(30),
-      }}
-    >
-      <View
-        style={{
-          backgroundColor: "red",
-          padding: scale(8),
-          borderRadius: scale(4),
-          marginVertical: scale(16),
-        }}
-      >
-        <Text style={{ color: "white", fontWeight: "bold" }}>
-          {isAdd ? "Thêm mới mục tiêu" : "Cập nhật mục tiêu"}
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>
+          {showForm
+            ? isAdd
+              ? "Thêm mới mục tiêu"
+              : "Cập nhật mục tiêu"
+            : "Danh sách mục tiêu"}
         </Text>
       </View>
-      <FromComponent
-        fields={formFields}
-        initialValues={initialValue}
-        onSubmit={handleSubmit}
-        // onChange={handleChange}
-        onCancel={handleCancel}
-      />
 
-      {/* Error Dialog */}
+      {showForm ? (
+        <FromComponent
+          fields={formFields}
+          initialValues={formData}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+        />
+      ) : (
+        <ScrollView
+          style={styles.listContainer}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {goals.length ? (
+            goals.map((goal, index) => (
+              <View
+                key={goal.id ?? `goal-${index}`}
+                style={styles.goalCardWrapper}
+              >
+                <TouchableOpacity
+                  style={styles.goalCard}
+                  onPress={() => handleEdit(goal)}
+                >
+                  <View style={styles.goalHeader}>
+                    <Text style={styles.goalTitle}>
+                      {goalTypeLabel[goal.goal_type] || "Mục tiêu"}
+                    </Text>
+                    <Text style={styles.goalStatus}>
+                      {goalStatusLabel[goal.status] || ""}
+                    </Text>
+                  </View>
+                  <Text style={styles.goalMeta}>
+                    Bắt đầu: {goal.start_date} · {goal.start_weight}kg
+                  </Text>
+                  <Text style={styles.goalMeta}>
+                    Mục tiêu: {goal.target_date} · {goal.target_weight}kg
+                  </Text>
+                  <Text style={styles.goalMeta}>
+                    Tốc độ: {goal.weekly_change_rate} kg/tuần
+                  </Text>
+                </TouchableOpacity>
+                
+                {/* Nút xóa */}
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteGoal(goal)}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Text style={styles.deleteButtonText}>Xóa</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>Chưa có mục tiêu</Text>
+          )}
+
+          <View style={styles.addButtonWrapper}>
+            <ButtonComponent
+              title="Thêm mục tiêu"
+              onPress={handleAdd}
+              variant="primary"
+            />
+          </View>
+        </ScrollView>
+      )}
+
       <ErrorDialog
         visible={showErrorDialog}
         onClose={handleCloseError}
@@ -247,3 +396,77 @@ export default function SettingTarget() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    marginHorizontal: scale(8),
+    marginVertical: scale(30),
+  },
+  header: {
+    backgroundColor: "red",
+    padding: scale(8),
+    borderRadius: scale(4),
+    marginVertical: scale(16),
+  },
+  headerText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  listContainer: {
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: scale(30),
+  },
+  goalCardWrapper: {
+    marginBottom: scale(12),
+    borderRadius: scale(8),
+    borderWidth: 1,
+    borderColor: "#eee",
+    backgroundColor: "white",
+    overflow: "hidden",
+  },
+  goalCard: {
+    padding: scale(12),
+  },
+  goalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: scale(6),
+  },
+  goalTitle: {
+    fontWeight: "700",
+    color: "#222",
+  },
+  goalStatus: {
+    color: "#555",
+  },
+  goalMeta: {
+    color: "#444",
+    marginTop: scale(2),
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: scale(10),
+    backgroundColor: "#FEF2F2",
+    borderTopWidth: 1,
+    borderTopColor: "#fee2e2",
+    gap: scale(6),
+  },
+  deleteButtonText: {
+    color: "#EF4444",
+    fontSize: scale(14),
+    fontWeight: "600",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#777",
+    marginVertical: scale(20),
+  },
+  addButtonWrapper: {
+    marginTop: scale(10),
+  },
+});

@@ -33,6 +33,7 @@ export const useSettingTargetStore = create<LoadingState>((set, get) => ({
 
   async getBySelf(_url: string) {
     const response = await settingTargetService.getSingleWithOutSlug(_url);
+    console.log('objectaa',response);
     return response;
   },
 }));
