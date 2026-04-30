@@ -8,23 +8,23 @@ import { Ban, FileCheck } from "lucide-react-native";
 import { Validator } from "@/utils/validation/validator";
 import MasterFormRow from "./MasterFormRow";
 
-interface MasterFormProps {
+interface MasterFormProps<T = { [key: string]: any }> {
   fields: MasterComponentItem[];
-  initialValues?: { [key: string]: any };
-  onSubmit?: (values: { [key: string]: any }) => void;
+  initialValues?: T;
+  onSubmit?: (values: T) => Promise<void> | void;
   onCancel?: () => void;
-  onChange?: (values: { [key: string]: any }, isValid: boolean) => void;
+  onChange?: (values: T, isValid: boolean) => void;
   containerStyle?: object;
 }
 
-const FormComponent: React.FC<MasterFormProps> = ({
+const FormComponent = <T extends { [key: string]: any }>({
   fields,
-  initialValues = {},
+  initialValues = {} as T,
   onSubmit,
   onCancel,
   onChange,
   containerStyle,
-}) => {
+}: MasterFormProps<T>) => {
   const [formState, setFormState] = useState<FormState>({
     values: {}, // Khởi tạo rỗng, không có giá trị mặc định
     errors: {},
@@ -76,7 +76,7 @@ const FormComponent: React.FC<MasterFormProps> = ({
     }));
 
     if (onChange) {
-      onChange(formState.values, isValid);
+      onChange(formState.values as T, isValid);
     }
   }, [formState.values, fields, onChange]);
 
@@ -117,7 +117,7 @@ const FormComponent: React.FC<MasterFormProps> = ({
     const isValid = Validator.isFormValid(errors);
 
     if (isValid && onSubmit) {
-      onSubmit(formState.values);
+      onSubmit(formState.values as T);
     }
   };
 
@@ -127,7 +127,6 @@ const FormComponent: React.FC<MasterFormProps> = ({
     }
   };
 
-  
   const renderFields = () => {
     return (
       <MasterFormRow

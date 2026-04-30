@@ -198,7 +198,9 @@ export default function SettingTarget() {
           onPress: async () => {
             loadingStore.setLoading(true);
             try {
-              const success = await settingTargetService.delete("/api/goals/", [goal.id as string]);
+              const success = await settingTargetService.delete("/api/goals/", [
+                goal.id as string,
+              ]);
               if (success) {
                 Toast.success(
                   "Xóa mục tiêu thành công",
@@ -220,22 +222,31 @@ export default function SettingTarget() {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: CreateSettingTarget) => {
     loadingStore.setLoading(true);
+
+    const payload = {
+      goal_type: values.goal_type,
+      start_weight: values.start_weight,
+      target_weight: values.target_weight,
+      weekly_change_rate: values.weekly_change_rate,
+      start_date: values.start_date,
+      target_date: values.target_date,
+    };
 
     try {
       let response;
 
       if (isAdd) {
-        response = await settingTargetService.post("/api/goals/", values);
+        response = await settingTargetService.post("/api/goals/", payload);
       } else {
         response = await settingTargetService.update(
           `/api/goals/${goalId}`,
-          values,
+          payload,
         );
       }
 
@@ -281,17 +292,15 @@ export default function SettingTarget() {
   const fetchGoals = useCallback(async () => {
     loadingStore.setLoading(true);
 
-    const response = await settingTargetStore.getBySelf("/api/goals/");
+    const response = await settingTargetStore.getBySelf("/api/goals/active");
     loadingStore.setLoading(false);
 
     let list: CreateSettingTarget[] = [];
 
-    if (Array.isArray(response)) {
-      list = response as CreateSettingTarget[];
-    } else if (Array.isArray(response?.data)) {
-      list = response.data as CreateSettingTarget[];
-    } else if (Array.isArray(response?.data?.data)) {
-      list = response.data.data as CreateSettingTarget[];
+    if (response) {
+      list = [response as CreateSettingTarget];
+    } else {
+      list = [];
     }
 
     setGoals(list);
@@ -344,26 +353,138 @@ export default function SettingTarget() {
                 <TouchableOpacity
                   style={styles.goalCard}
                   onPress={() => handleEdit(goal)}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.goalHeader}>
-                    <Text style={styles.goalTitle}>
-                      {goalTypeLabel[goal.goal_type] || "Mục tiêu"}
-                    </Text>
-                    <Text style={styles.goalStatus}>
-                      {goalStatusLabel[goal.status] || ""}
-                    </Text>
+                    <View style={styles.goalTitleWrapper}>
+                      <View style={styles.goalIconContainer}>
+                        {goal.goal_type === GOALTYPE.LOSE_WEIGHT && (
+                          <Ionicons
+                            name="trending-down"
+                            size={20}
+                            color="#EF4444"
+                          />
+                        )}
+                        {goal.goal_type === GOALTYPE.GAIN_WEIGHT && (
+                          <Ionicons
+                            name="trending-up"
+                            size={20}
+                            color="#10B981"
+                          />
+                        )}
+                        {goal.goal_type === GOALTYPE.MAINTAIN_WEIGHT && (
+                          <Ionicons name="fitness" size={20} color="#3B82F6" />
+                        )}
+                      </View>
+                      <Text style={styles.goalTitle}>
+                        {goalTypeLabel[goal.goal_type] || "Mục tiêu"}
+                      </Text>
+                    </View>
+
+                    <View style={styles.headerActions}>
+                      {goal.status === GOALSTATUS.ACTIVE && (
+                        <View style={styles.activeBadge}>
+                          <Text style={styles.activeBadgeText}>
+                            Đang thực hiện
+                          </Text>
+                        </View>
+                      )}
+                      <Ionicons
+                        name="pencil-outline"
+                        size={20}
+                        color="#3B82F6"
+                      />
+                    </View>
                   </View>
-                  <Text style={styles.goalMeta}>
-                    Bắt đầu: {goal.start_date} · {goal.start_weight}kg
-                  </Text>
-                  <Text style={styles.goalMeta}>
-                    Mục tiêu: {goal.target_date} · {goal.target_weight}kg
-                  </Text>
-                  <Text style={styles.goalMeta}>
-                    Tốc độ: {goal.weekly_change_rate} kg/tuần
-                  </Text>
+
+                  <View style={styles.weightContainer}>
+                    <View style={styles.weightItem}>
+                      <Text style={styles.weightLabel}>Cân nặng hiện tại</Text>
+                      <Text style={styles.weightValue}>
+                        {goal.start_weight}
+                      </Text>
+                      <Text style={styles.weightUnit}>kg</Text>
+                    </View>
+
+                    <View style={styles.weightArrow}>
+                      <Ionicons
+                        name="arrow-forward"
+                        size={20}
+                        color="#CBD5E1"
+                      />
+                    </View>
+
+                    <View style={styles.weightItem}>
+                      <Text style={styles.weightLabel}>Mục tiêu</Text>
+                      <Text style={styles.weightValue}>
+                        {goal.target_weight}
+                      </Text>
+                      <Text style={styles.weightUnit}>kg</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.goalMetaContainer}>
+                    <View style={styles.metaItem}>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={14}
+                        color="#94A3B8"
+                      />
+                      <Text style={styles.metaText}>
+                        {goal.start_date} → {goal.target_date}
+                      </Text>
+                    </View>
+
+                    <View style={styles.metaItem}>
+                      <Ionicons
+                        name="speedometer-outline"
+                        size={14}
+                        color="#94A3B8"
+                      />
+                      <Text style={styles.metaText}>
+                        {goal.weekly_change_rate} kg/tuần
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Progress bar */}
+                  {/* {goal.goal_type !== GOALTYPE.MAINTAIN_WEIGHT && (
+                    <View style={styles.progressContainer}>
+                      <View style={styles.progressBar}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            {
+                              width: `${Math.min(
+                                Math.abs(
+                                  ((goal.start_weight - goal.target_weight) /
+                                    goal.start_weight) *
+                                    100,
+                                ),
+                                100,
+                              )}%`,
+                              backgroundColor:
+                                goal.goal_type === GOALTYPE.LOSE_WEIGHT
+                                  ? "#EF4444"
+                                  : "#10B981",
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.progressText}>
+                        {Math.abs(
+                          ((goal.start_weight - goal.target_weight) /
+                            goal.start_weight) *
+                            100,
+                        ).toFixed(1)}
+                        % hoàn thành
+                      </Text>
+                    </View>
+                  )} */}
                 </TouchableOpacity>
-                
+
                 {/* Nút xóa */}
                 <TouchableOpacity
                   style={styles.deleteButton}
@@ -404,14 +525,15 @@ const styles = StyleSheet.create({
     marginVertical: scale(30),
   },
   header: {
-    backgroundColor: "red",
-    padding: scale(8),
-    borderRadius: scale(4),
+    backgroundColor: "#EF4444",
+    padding: scale(12),
+    borderRadius: scale(8),
     marginVertical: scale(16),
   },
   headerText: {
     color: "white",
     fontWeight: "bold",
+    fontSize: scale(16),
   },
   listContainer: {
     flex: 1,
@@ -421,39 +543,134 @@ const styles = StyleSheet.create({
   },
   goalCardWrapper: {
     marginBottom: scale(12),
-    borderRadius: scale(8),
+    borderRadius: scale(12),
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: "#E2E8F0",
     backgroundColor: "white",
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   goalCard: {
-    padding: scale(12),
+    padding: scale(16),
   },
   goalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: scale(6),
+    alignItems: "center",
+    marginBottom: scale(16),
+  },
+  goalTitleWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(8),
+  },
+  goalIconContainer: {
+    width: scale(32),
+    height: scale(32),
+    borderRadius: scale(16),
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
   },
   goalTitle: {
     fontWeight: "700",
-    color: "#222",
+    fontSize: scale(16),
+    color: "#1E293B",
   },
-  goalStatus: {
-    color: "#555",
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(8),
   },
-  goalMeta: {
-    color: "#444",
+  activeBadge: {
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: scale(8),
+    paddingVertical: scale(4),
+    borderRadius: scale(12),
+  },
+  activeBadgeText: {
+    color: "#D97706",
+    fontSize: scale(10),
+    fontWeight: "600",
+  },
+  weightContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: scale(16),
+  },
+  weightItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  weightLabel: {
+    fontSize: scale(12),
+    color: "#64748B",
+    marginBottom: scale(4),
+  },
+  weightValue: {
+    fontSize: scale(24),
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  weightUnit: {
+    fontSize: scale(12),
+    color: "#94A3B8",
     marginTop: scale(2),
+  },
+  weightArrow: {
+    paddingHorizontal: scale(8),
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginVertical: scale(12),
+  },
+  goalMetaContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: scale(12),
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: scale(4),
+  },
+  metaText: {
+    fontSize: scale(12),
+    color: "#64748B",
+  },
+  progressContainer: {
+    marginTop: scale(8),
+  },
+  progressBar: {
+    height: scale(6),
+    backgroundColor: "#F1F5F9",
+    borderRadius: scale(3),
+    overflow: "hidden",
+    marginBottom: scale(6),
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: scale(3),
+  },
+  progressText: {
+    fontSize: scale(11),
+    color: "#94A3B8",
+    textAlign: "center",
   },
   deleteButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: scale(10),
+    paddingVertical: scale(12),
     backgroundColor: "#FEF2F2",
     borderTopWidth: 1,
-    borderTopColor: "#fee2e2",
+    borderTopColor: "#FEE2E2",
     gap: scale(6),
   },
   deleteButtonText: {
@@ -463,8 +680,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: "center",
-    color: "#777",
+    color: "#94A3B8",
     marginVertical: scale(20),
+    fontSize: scale(14),
   },
   addButtonWrapper: {
     marginTop: scale(10),
