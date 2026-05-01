@@ -35,7 +35,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ loading: true });
 
-          const res = await authService.login({ email, password });
+          const res = await authService.login({
+            email,
+            password,
+            remember: true,
+          });
 
           if (res.code === 200) {
             set({
@@ -51,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
 
             return true;
           }
-
+          useErrorStore.getState().clearError(); // Clear previous errors if login is successful
           if (res.code === 401) {
             useErrorStore.getState().setError(res.message || "Unauthorized");
           }

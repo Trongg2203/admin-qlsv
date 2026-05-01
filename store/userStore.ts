@@ -17,7 +17,9 @@ interface UserState {
   userProfile: IUserProfile | null;
   userForgotResponse: IUserForgotResponse | null;
   fetchUserDetail: () => Promise<void>;
-  getUserProfile: () => Promise<void>;
+  getUserProfile: () => Promise<IUserProfile | null>;
+  createUserProfile: (data: Partial<IUserProfile>) => Promise<boolean>;
+  updateUserProfile: (data: Partial<IUserProfile>) => Promise<boolean>;
   forgotPassword: (data: any) => Promise<boolean>;
   clearForgotResponse: () => void;
   UsersList: User[];
@@ -54,10 +56,32 @@ export const useUserStore = create<UserState>()((set, get) => ({
         API.USER.PROFILE,
         "",
       );
-      if (response) set({ userProfile: response });
+      if (response) {
+        set({ userProfile: response });
+        return response;
+      }
+      set({ userProfile: null });
+      return null;
     } catch (error) {
       console.log(error);
+      return null;
     }
+  },
+
+  createUserProfile: async (data) => {
+    const response = await userService.post<Partial<IUserProfile>>(
+      API.USER.PROFILE,
+      data,
+    );
+    return response;
+  },
+
+  updateUserProfile: async (data) => {
+    const response = await userService.update<Partial<IUserProfile>>(
+      API.USER.PROFILE,
+      data,
+    );
+    return response;
   },
 
   forgotPassword: async (data: any): Promise<boolean> => {

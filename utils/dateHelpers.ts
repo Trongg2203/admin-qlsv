@@ -20,3 +20,9 @@ export function addDays(date: string | Date, days: number) {
   d.setDate(d.getDate() + days);
   return formatDate(d);
 }
+
+export function minusYear(date: string | Date, years: number) {
+  const d = new Date(date);
+  d.setFullYear(d.getFullYear() - years);
+  return formatDate(d);
+}

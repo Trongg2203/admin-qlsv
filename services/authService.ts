@@ -8,7 +8,7 @@ import {
 import { LoggedIn } from "@/typings/interfaces/auth/login";
 
 class AuthService extends BaseService {
-  async login(data: { email: string; password: string }) {
+  async login(data: { email: string; password: string; remember: true }) {
     try {
       const result = await http.post<ApiResultGeneric<LoggedIn>>(
         API.AUTH.LOGIN,

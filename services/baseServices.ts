@@ -39,12 +39,12 @@ class BaseService {
       ) {
         result = true;
         useErrorStore.getState().clearError();
-      } else if (response && (response.code !== 200 || 201)) {
-        useErrorStore.getState().setError(response?.message || "Có lỗi xảy ra");
+      } else if (response) {
+        useErrorStore.getState().setErrorFromResponse(response);
       }
     } catch (error) {
       console.log(error);
-      useErrorStore.getState().setError(error);
+      useErrorStore.getState().setErrorFromException(error);
       return false;
     }
     return result;
@@ -58,11 +58,15 @@ class BaseService {
 
     try {
       const response = await http.post<ApiResultGeneric<TResponse>>(_url, data);
-      if (response && response.code === 200 && response.data != null) {
+      if (
+        response &&
+        (response.code === 200 || response.code === 201) &&
+        response.data != null
+      ) {
         result = response.data;
         useErrorStore.getState().clearError();
       } else {
-        useErrorStore.getState().setError(response?.message || "Có lỗi xảy ra");
+        useErrorStore.getState().setErrorFromResponse(response);
       }
     } catch (error) {
       console.log(error);
@@ -78,11 +82,13 @@ class BaseService {
 
     try {
       const response = await http.put<ApiResultGeneric<T>>(_url, data);
-      if (response && response.code === 200 && response.data != null) {
+      const isOk = response && (response.code === 200 || response.code === 204);
+
+      if (isOk) {
         result = true;
         useErrorStore.getState().clearError();
       } else {
-        useErrorStore.getState().setError(response?.message || "Có lỗi xảy ra");
+        useErrorStore.getState().setErrorFromResponse(response);
       }
     } catch (err) {
       console.log(err);

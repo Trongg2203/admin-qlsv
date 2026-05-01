@@ -57,7 +57,7 @@ export interface MasterComponentItem {
     rows?: number;
     validationRules?: ValidationRule[];
     direction?: "row" | "column";
-    mode?: "date" | "time" | "datetime";
+    mode?: "date" | "time" | "datetime" | "number";
     [key: string]: any;
   };
   children?: MasterComponentItem[];

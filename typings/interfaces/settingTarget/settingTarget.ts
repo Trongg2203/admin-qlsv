@@ -10,4 +10,5 @@ export interface CreateSettingTarget {
   is_completed:number;
   status:number;
   weekly_change_rate: number; // Tỷ lệ thay đổi cân nặng hàng tuần (kg/tuần)
+  current_weight?: number; // Cân nặng hiện tại (kg)
 }

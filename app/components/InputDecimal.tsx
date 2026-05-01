@@ -1,6 +1,6 @@
 // components/InputDecimalComponent.tsx
-import React, { useState, useRef, useEffect } from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 interface InputDecimalComponentProps {
   value: any;
@@ -36,6 +36,7 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
   const [displayValue, setDisplayValue] = useState<string>(
     formatDisplayValue(value),
   );
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   // Format số hiển thị
@@ -117,21 +118,21 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
     return isNaN(num) ? null : num;
   }
 
-  // Validate giá trị với min/max
+  // Validate giá trị với min/max (dùng khi blur)
   const validateValue = (num: number | null): number | null => {
     if (num === null) return null;
-    
+
     let finalValue = num;
-    
+
     // Giới hạn min
-    if (info.min !== undefined && finalValue < info.min) {
+    if (info.min !== undefined && finalValue <= info.min) {
       finalValue = info.min;
     }
     // Giới hạn max
-    if (info.max !== undefined && finalValue > info.max) {
+    if (info.max !== undefined && finalValue >= info.max) {
       finalValue = info.max;
     }
-    
+
     // Làm tròn theo decimalPlaces
     const decimalPlaces = info.decimalPlaces ?? 2;
     return Number(finalValue.toFixed(decimalPlaces));
@@ -161,15 +162,9 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
     const number = parseToNumber(text);
 
     if (number !== null) {
-      const validatedValue = validateValue(number);
-      if (validatedValue !== null) {
-        const formatted = formatDisplayValue(validatedValue);
-        setDisplayValue(formatted);
-        onChange(validatedValue);
-      } else {
-        setDisplayValue(text);
-        onChange(null);
-      }
+      // Cho nhập tự do; không format khi đang nhập
+      setDisplayValue(text);
+      onChange(number);
     } else {
       // Nếu không parse được số, vẫn hiển thị text người dùng nhập
       setDisplayValue(text);
@@ -194,7 +189,7 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
       // Nếu có giá trị, format lại
       const formatted = formatDisplayValue(value);
       setDisplayValue(formatted);
-      
+
       // Validate lại với min/max
       const validatedValue = validateValue(value);
       if (validatedValue !== null && validatedValue !== value) {
@@ -205,16 +200,18 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
     if (onBlur) {
       onBlur();
     }
+
+    setIsFocused(false);
   };
 
   const getDisplayText = () => {
     let text = displayValue;
     if (text === "") return "";
 
-    if (info.prefix && text) {
+    if (!isFocused && info.prefix && text) {
       text = info.prefix + " " + text;
     }
-    if (info.suffix && text) {
+    if (!isFocused && info.suffix && text) {
       text = text + " " + info.suffix;
     }
     return text;
@@ -243,6 +240,7 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
         ]}
         value={getDisplayText()}
         onChangeText={handleChangeText}
+        onFocus={() => setIsFocused(true)}
         onBlur={handleBlur}
         placeholder={info.placeholder || "Nhập số"}
         editable={!info.readonly && !info.disabled}

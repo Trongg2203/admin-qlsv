@@ -38,14 +38,14 @@ export default function ProfileScreen() {
   );
 
   const profileFields: FieldItem[] = [
-    {
-      label: "Sđt",
-      value: userStore.userProfile?.user.phone,
-    },
-    {
-      label: "Địa chỉ",
-      value: shortName(userStore.userProfile?.user.address ?? "", 30),
-    },
+    // {
+    //   label: "Sđt",
+    //   value: userStore.userProfile?.user.phone,
+    // },
+    // {
+    //   label: "Địa chỉ",
+    //   value: shortName(userStore.userProfile?.user.address ?? "", 30),
+    // },
     {
       label: "Giới tính",
       render: () => gender && <ChipComponent label={gender.text} selected />,
@@ -73,7 +73,13 @@ export default function ProfileScreen() {
             router.push("/Screen/setting-target");
           },
         },
-        
+        {
+          label: "Thông tin cá nhân",
+          value: <Settings size={16} />,
+          onPress: () => {
+            router.push("/Screen/ProfileSetting");
+          },
+        },
       ],
     },
   ];

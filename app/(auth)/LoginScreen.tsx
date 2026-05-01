@@ -20,9 +20,9 @@ import LinkComponent from "../components/LinkComponent";
 import { useErrorStore } from "@/store/errorStore";
 
 export default function LoginScreen() {
-  const [email, setEmail] = React.useState("admin@gmail.com");
+  const [email, setEmail] = React.useState("dang.minh.quan@gmail.com");
   const [showPassword, setShowPassword] = React.useState(true);
-  const [password, setPassword] = React.useState("123456");
+  const [password, setPassword] = React.useState("Password@123");
 
   // store
   const loading = useLoadingStore();
@@ -81,7 +81,7 @@ export default function LoginScreen() {
 
               <Text style={styles.title}>Đăng nhập</Text>
               <Text style={styles.subtitle}>
-                Hãy đăng nhập để sự dụng hệ thống
+                Hãy đăng nhập để sử dụng hệ thống
               </Text>
             </View>
 
