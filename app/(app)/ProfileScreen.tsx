@@ -1,17 +1,19 @@
-import { Image, Text, View } from "react-native";
-import ButtonComponent from "../components/ButtonComponent";
-import { useAuthStore } from "@/store/authStore";
-import { profileCss } from "@/assets/css/profile.styles";
 import { baseCss } from "@/assets/css/basecss.style";
+import { profileCss } from "@/assets/css/profile.styles";
+import { useAuthStore } from "@/store/authStore";
 import { useLoadingStore } from "@/store/loadingStore";
+import { themeTokens, useThemeStore } from "@/store/themeStore";
 import { useUserStore } from "@/store/userStore";
-import { formatHeight, formatWeight, shortName } from "@/utils/helpers";
-import ChipComponent from "../components/ChipComponent";
-import { GENDER } from "@/typings/types/UserType";
 import { genderType, getActivityLabel } from "@/utils/formalHelpers";
-import InfoListComponent from "../components/InfoListComponent";
+import { formatHeight, formatWeight, shortName } from "@/utils/helpers";
+import { tabBarScrollY } from "@/utils/tabBarScroll";
 import { LogOut, Settings } from "lucide-react-native";
-import { ScrollView } from "react-native";
+import { useMemo } from "react";
+import { Animated, Image, StyleSheet, Text, View } from "react-native";
+import ButtonComponent from "../components/ButtonComponent";
+import ChipComponent from "../components/ChipComponent";
+import InfoListComponent from "../components/InfoListComponent";
+
 import { FieldItem } from "@/typings/types/FieldItem";
 import { useRouter } from "expo-router";
 import DividerComponent from "../components/DividerComponent";
@@ -21,6 +23,10 @@ export default function ProfileScreen() {
   const authStore = useAuthStore();
   const userStore = useUserStore();
   const loadingStore = useLoadingStore();
+  const { resolvedTheme } = useThemeStore();
+  const tokens = themeTokens[resolvedTheme];
+
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
 
   async function onLogOut() {
     try {
@@ -68,16 +74,29 @@ export default function ProfileScreen() {
       children: [
         {
           label: "Thiết lập mục tiêu",
-          value: <Settings size={16} />,
+          value: <Settings size={16} color={tokens.accent} />,
           onPress: () => {
             router.push("/Screen/setting-target");
           },
         },
         {
           label: "Thông tin cá nhân",
-          value: <Settings size={16} />,
+          value: <Settings size={16} color={tokens.accent} />,
           onPress: () => {
             router.push("/Screen/ProfileSetting");
+          },
+        },
+      ],
+    },
+    {
+      label: "Ứng dụng",
+      isIconExpanse: true,
+      children: [
+        {
+          label: "Cài đặt giao diện",
+          value: <Settings size={16} color={tokens.accent} />,
+          onPress: () => {
+            router.push("/Screen/AppSetting");
           },
         },
       ],
@@ -85,16 +104,21 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
+    <Animated.ScrollView
+      style={[{ flex: 1, backgroundColor: tokens.background }]}
       contentContainerStyle={{ paddingBottom: 20 }}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
+      scrollEventThrottle={16}
+      onScroll={Animated.event(
+        [{ nativeEvent: { contentOffset: { y: tabBarScrollY } } }],
+        { useNativeDriver: true },
+      )}
     >
       <View style={baseCss.base_padding}>
         {/* header profile */}
         <View style={profileCss.header_profile}>
-          <Text style={profileCss.name}>
+          <Text style={[profileCss.name, { color: tokens.text }]}>
             {shortName(userStore.userProfile?.user.name ?? "Name", 30)}
           </Text>
           <Image
@@ -115,6 +139,14 @@ export default function ProfileScreen() {
           onPress={onLogOut}
         />
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
+
+const createStyles = (tokens: typeof themeTokens.dark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: tokens.background,
+    },
+  });

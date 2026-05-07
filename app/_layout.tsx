@@ -1,13 +1,16 @@
+import { useThemeStore } from "@/store/themeStore";
 import { Stack } from "expo-router";
-import { createRef, useEffect } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { Platform } from "react-native";
-import GlobalLoading from "./components/UI/GlobalLoading";
+import { createRef, useEffect } from "react";
+import { Appearance, Platform } from "react-native";
 import ToastManager from "toastify-react-native/components/ToastManager";
+import GlobalLoading from "./components/UI/GlobalLoading";
 
 const toastRef = createRef<any>();
 
 export default function RootLayout() {
+  const { hydrateTheme, setSystemTheme } = useThemeStore();
+
   useEffect(() => {
     const lockOrientation = async () => {
       try {
@@ -41,6 +44,17 @@ export default function RootLayout() {
   useEffect(() => {
     ToastManager.setRef(toastRef);
   }, []);
+
+  useEffect(() => {
+    hydrateTheme();
+    const listener = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemTheme(colorScheme === "dark" ? "dark" : "light");
+    });
+
+    return () => {
+      listener.remove();
+    };
+  }, [hydrateTheme, setSystemTheme]);
 
   return (
     <>

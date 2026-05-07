@@ -1,17 +1,18 @@
 import { useErrorStore } from "@/store/errorStore";
 import { useLoadingStore } from "@/store/loadingStore";
+import { themeTokens, useThemeStore } from "@/store/themeStore";
 import { useUserStore } from "@/store/userStore";
 import { IUserProfile } from "@/typings/interfaces/user/user";
 import { DateFormat } from "@/typings/types/DateType";
 import { MasterComponentItem } from "@/typings/types/form.types";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
+import { getCurrentDate, minusYear } from "@/utils/dateHelpers";
+import { scale } from "@/utils/responsive";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import ToastManager from "toastify-react-native/components/ToastManager";
 import FormComponent from "../components/form/FormComponent";
 import ErrorDialog from "../components/UI/ErrorDialog";
-import { getCurrentDate, minusYear } from "@/utils/dateHelpers";
-import ToastManager from "toastify-react-native/components/ToastManager";
-import { scale } from "@/utils/responsive";
 
 type ProfileFormValues = {
   date_of_birth: string;
@@ -32,6 +33,9 @@ const initialValue: ProfileFormValues = {
 };
 
 export default function ProfileSetting() {
+  const { resolvedTheme } = useThemeStore();
+  const tokens = themeTokens[resolvedTheme];
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
   const loadingStore = useLoadingStore();
   const { hasError, clearError } = useErrorStore();
   const { userProfile, getUserProfile, createUserProfile, updateUserProfile } =
@@ -240,20 +244,24 @@ export default function ProfileSetting() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginTop: scale(16),
-    paddingBottom: scale(16),
-  },
-  header: {
-    backgroundColor: "#0F172A",
-    padding: scale(12),
-    borderRadius: scale(8),
-    margin: scale(16),
-  },
-  headerText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-});
+const createStyles = (tokens: typeof themeTokens.dark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      marginTop: scale(16),
+      paddingBottom: scale(16),
+      backgroundColor: tokens.background,
+    },
+    header: {
+      backgroundColor: tokens.surface,
+      borderColor: tokens.border,
+      borderWidth: 1,
+      padding: scale(12),
+      borderRadius: scale(8),
+      margin: scale(16),
+    },
+    headerText: {
+      color: tokens.text,
+      fontWeight: "700",
+    },
+  });

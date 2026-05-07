@@ -9,7 +9,6 @@ export interface MenuItem {
 
 // constants/menu.ts
 import {
-  House,
   CalendarCheck2,
   User,
   Settings,
@@ -19,12 +18,6 @@ import {
 } from "lucide-react-native";
 
 export const menuItems: MenuItem[] = [
-  {
-    name: "HomeScreen",
-    label: "Trang chủ",
-    icon: House,
-    route: "/HomeScreen",
-  },
   {
     name: "DailyScreen",
     label: "Hàng ngày",

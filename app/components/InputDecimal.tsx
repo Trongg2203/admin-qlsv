@@ -1,5 +1,6 @@
 // components/InputDecimalComponent.tsx
-import React, { useEffect, useRef, useState } from "react";
+import { themeTokens, useThemeStore } from "@/store/themeStore";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
 interface InputDecimalComponentProps {
@@ -38,6 +39,12 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
   );
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const { resolvedTheme } = useThemeStore();
+  const tokens = themeTokens[resolvedTheme];
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const isError = !!touched && !!error;
+  const label = info.label;
+  const accessibilityLabel = info.accessibilityLabel || label || "Input";
 
   // Format số hiển thị
   function formatDisplayValue(val: any): string {
@@ -224,79 +231,110 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      {info.label && (
+      {label && (
         <Text style={styles.label}>
-          {info.label}
+          {label}
           {info.required && <Text style={styles.required}> *</Text>}
         </Text>
       )}
 
-      <TextInput
-        ref={inputRef}
-        style={[
-          styles.input,
-          touched && error && styles.inputError,
-          (info.readonly || info.disabled) && styles.inputDisabled,
-        ]}
-        value={getDisplayText()}
-        onChangeText={handleChangeText}
-        onFocus={() => setIsFocused(true)}
-        onBlur={handleBlur}
-        placeholder={info.placeholder || "Nhập số"}
-        editable={!info.readonly && !info.disabled}
-        keyboardType="decimal-pad"
-        returnKeyType="done"
-      />
+      <View style={styles.inputWrapper}>
+        {info.icon ? <View style={styles.leftIcon}>{info.icon}</View> : null}
+        <TextInput
+          ref={inputRef}
+          style={[
+            styles.input,
+            info.icon && styles.inputWithIcon,
+            isError && styles.inputError,
+            (info.readonly || info.disabled) && styles.inputDisabled,
+          ]}
+          value={getDisplayText()}
+          onChangeText={handleChangeText}
+          onFocus={() => setIsFocused(true)}
+          onBlur={handleBlur}
+          placeholder={info.placeholder || "Nhap so"}
+          placeholderTextColor={tokens.subtext}
+          editable={!info.readonly && !info.disabled}
+          keyboardType="decimal-pad"
+          returnKeyType={info.returnKeyType || "done"}
+          onSubmitEditing={info.onSubmitEditing}
+          blurOnSubmit={info.blurOnSubmit}
+          accessibilityLabel={accessibilityLabel}
+        />
+      </View>
 
-      {touched && error && <Text style={styles.errorText}>{error}</Text>}
+      {isError && (
+        <Text
+          style={styles.errorText}
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+        >
+          {error}
+        </Text>
+      )}
 
       {info.min !== undefined && info.max !== undefined && (
         <Text style={styles.hintText}>
-          Giá trị từ {info.min} đến {info.max}
+          Gia tri tu {info.min} den {info.max}
         </Text>
       )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#333",
-  },
-  required: {
-    color: "#ff3b30",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-  inputError: {
-    borderColor: "#ff3b30",
-  },
-  inputDisabled: {
-    backgroundColor: "#f5f5f5",
-    color: "#999",
-  },
-  errorText: {
-    color: "#ff3b30",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  hintText: {
-    color: "#999",
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
+const createStyles = (tokens: typeof themeTokens.dark) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "500",
+      marginBottom: 8,
+      color: tokens.text,
+    },
+    required: {
+      color: tokens.danger,
+    },
+    inputWrapper: {
+      position: "relative",
+      justifyContent: "center",
+    },
+    leftIcon: {
+      position: "absolute",
+      left: 12,
+      zIndex: 1,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: tokens.border,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      fontSize: 16,
+      backgroundColor: tokens.surface,
+      color: tokens.text,
+    },
+    inputWithIcon: {
+      paddingLeft: 40,
+    },
+    inputError: {
+      borderColor: tokens.danger,
+    },
+    inputDisabled: {
+      backgroundColor: tokens.card,
+      color: tokens.subtext,
+    },
+    errorText: {
+      color: tokens.danger,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    hintText: {
+      color: tokens.subtext,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  });
 
 export default InputDecimalComponent;

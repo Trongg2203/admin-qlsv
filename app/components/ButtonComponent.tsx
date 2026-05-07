@@ -1,5 +1,12 @@
 import React from "react";
-import { Pressable, Text, StyleSheet, ViewStyle, View } from "react-native";
+import {
+    ActivityIndicator,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+    ViewStyle,
+} from "react-native";
 
 type Props = {
   title: string;
@@ -8,6 +15,8 @@ type Props = {
   icon?: React.ComponentType<{ size?: number; color?: string }>;
   iconPosition?: "left" | "right";
   disabled?: boolean;
+  loading?: boolean;
+  disabledColor?: string;
   color?: string;
   textColor?: string;
   iconColor?: string;
@@ -21,6 +30,8 @@ export default function ButtonComponent({
   icon: IconComponent,
   iconPosition = "left",
   disabled = false,
+  loading = false,
+  disabledColor,
   color,
   textColor,
   iconColor,
@@ -94,7 +105,7 @@ export default function ButtonComponent({
     } else {
       buttonStyle = {
         ...buttonStyle,
-        backgroundColor: disabled ? "#ccc" : bg,
+        backgroundColor: disabled || loading ? disabledColor || "#ccc" : bg,
       };
     }
 
@@ -109,16 +120,21 @@ export default function ButtonComponent({
         style,
       ]}
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
     >
       <View style={styles.content}>
-        {IconComponent && iconPosition === "left" && (
-          <View style={styles.iconLeft}>
-            <IconComponent size={18} color={iconColorFinal} />
-          </View>
+        {loading ? (
+          <ActivityIndicator size="small" color={iconColorFinal} />
+        ) : (
+          IconComponent &&
+          iconPosition === "left" && (
+            <View style={styles.iconLeft}>
+              <IconComponent size={18} color={iconColorFinal} />
+            </View>
+          )
         )}
         <Text style={[styles.text, { color: text }]}>{title}</Text>
-        {IconComponent && iconPosition === "right" && (
+        {!loading && IconComponent && iconPosition === "right" && (
           <View style={styles.iconRight}>
             <IconComponent size={18} color={iconColorFinal} />
           </View>

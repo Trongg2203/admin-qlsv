@@ -52,7 +52,7 @@ export default function LoginScreen() {
       if (!isSuccess) return; //  không chuyển trang
 
       clearForgotResponse();
-      router.replace("/(app)/HomeScreen");
+      router.replace("/(app)/DailyScreen");
     } finally {
       loading.setLoading(false);
     }

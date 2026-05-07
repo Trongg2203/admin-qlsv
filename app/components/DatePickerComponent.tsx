@@ -1,5 +1,5 @@
 // components/DatePickerComponent.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Calendar, X, ChevronDown, Check } from "lucide-react-native";
 import { DateFormat } from "@/typings/types/DateType";
+import { themeTokens, useThemeStore } from "@/store/themeStore";
 
 interface DatePickerComponentProps {
   value: any;
@@ -43,6 +44,9 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [tempDate, setTempDate] = useState<Date>(new Date());
+  const { resolvedTheme } = useThemeStore();
+  const tokens = themeTokens[resolvedTheme];
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
 
   // Format date theo mode và format
   const formatDate = (date: Date | null): string => {
@@ -291,35 +295,35 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({
             <View style={styles.modalBackground} />
           </TouchableWithoutFeedback>
           
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: tokens.surface }]}>
             {/* Header với thanh trượt indicator */}
             <View style={styles.modalDragBar}>
-              <View style={styles.dragBar} />
+              <View style={[styles.dragBar, { backgroundColor: tokens.border }]} />
             </View>
             
             {/* Title và buttons */}
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={handleCancelIOS} style={styles.modalButton}>
-                <Text style={styles.modalCancelButton}>Hủy</Text>
+                <Text style={[styles.modalCancelButton, { color: tokens.error }]}>Hủy</Text>
               </TouchableOpacity>
               
               <View style={styles.modalTitleContainer}>
-                <Text style={styles.modalTitle}>{modeText}</Text>
+                <Text style={[styles.modalTitle, { color: tokens.text }]}>{modeText}</Text>
                 {selectedDate && (
-                  <Text style={styles.modalSubtitle}>
+                  <Text style={[styles.modalSubtitle, { color: tokens.subtext }]}>
                     Đã chọn: {formatDate(selectedDate)}
                   </Text>
                 )}
               </View>
               
               <TouchableOpacity onPress={handleConfirmIOS} style={[styles.modalButton, styles.confirmButton]}>
-                <Check size={20} color="#6B4EFF" />
-                <Text style={styles.modalConfirmButton}>Xong</Text>
+                <Check size={20} color={tokens.accent} />
+                <Text style={[styles.modalConfirmButton, { color: tokens.accent }]}>Xong</Text>
               </TouchableOpacity>
             </View>
             
             {/* Divider */}
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: tokens.border }]} />
             
             {/* Date Picker */}
             <DateTimePicker
@@ -331,21 +335,21 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({
               maximumDate={info.maxDate}
               locale="vi_VN"
               style={styles.iosPicker}
-              themeVariant="light"
-              textColor="#333"
+              themeVariant={resolvedTheme === "dark" ? "dark" : "light"}
+              textColor={tokens.text}
             />
             
             {/* Nút chọn nhanh hôm nay (chỉ cho mode date) */}
             {info.mode === "date" && (
               <TouchableOpacity 
-                style={styles.todayButton}
+                style={[styles.todayButton, { backgroundColor: tokens.card }]}
                 onPress={() => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   setTempDate(today);
                 }}
               >
-                <Text style={styles.todayButtonText}>Hôm nay</Text>
+                <Text style={[styles.todayButtonText, { color: tokens.accent }]}>Hôm nay</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -358,9 +362,9 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({
     <View style={styles.container}>
       {/* Label */}
       {info.label && (
-        <Text style={styles.label}>
+        <Text style={[styles.label, { color: tokens.text }]}>
           {info.label}
-          {info.required && <Text style={styles.required}> *</Text>}
+          {info.required && <Text style={[styles.required, { color: tokens.error }]}> *</Text>}
         </Text>
       )}
 
@@ -368,31 +372,42 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({
       <TouchableOpacity
         style={[
           styles.inputContainer,
+          { 
+            borderColor: tokens.border,
+            backgroundColor: tokens.surface,
+          },
           touched && error && styles.inputError,
-          (info.disabled || info.readonly) && styles.inputDisabled,
+          (info.disabled || info.readonly) && { 
+            backgroundColor: tokens.disabled,
+            borderColor: tokens.border,
+          },
         ]}
         onPress={showDatePicker}
         disabled={info.disabled || info.readonly}
         activeOpacity={0.7}
       >
         <View style={styles.inputWrapper}>
-          <Calendar size={20} color="#6B4EFF" style={styles.calendarIcon} />
+          <Calendar size={20} color={tokens.accent} style={styles.calendarIcon} />
           <Text
-            style={[styles.inputText, !selectedDate && styles.placeholderText]}
+            style={[
+              styles.inputText,
+              { color: tokens.text },
+              !selectedDate && { color: tokens.subtext },
+            ]}
           >
             {displayText || placeholder}
           </Text>
           {selectedDate && !info.disabled && !info.readonly && (
             <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-              <X size={16} color="#999" />
+              <X size={16} color={tokens.subtext} />
             </TouchableOpacity>
           )}
-          <ChevronDown size={16} color="#999" style={styles.dropdownIcon} />
+          <ChevronDown size={16} color={tokens.subtext} style={styles.dropdownIcon} />
         </View>
       </TouchableOpacity>
 
       {/* Error message */}
-      {touched && error && <Text style={styles.errorText}>{error}</Text>}
+      {touched && error && <Text style={[styles.errorText, { color: tokens.error }]}>{error}</Text>}
 
       {/* Android DatePicker */}
       {showPicker && Platform.OS === "android" && (
@@ -412,170 +427,147 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-    width: "100%",
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
-  },
-  required: {
-    color: "#ff3b30",
-  },
-  inputContainer: {
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    minHeight: 50,
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-  },
-  calendarIcon: {
-    marginRight: 10,
-  },
-  dropdownIcon: {
-    marginLeft: 8,
-  },
-  inputText: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-    paddingVertical: 12,
-  },
-  placeholderText: {
-    color: "#999",
-  },
-  clearButton: {
-    padding: 4,
-  },
-  inputError: {
-    borderColor: "#ff3b30",
-    borderWidth: 1.5,
-  },
-  inputDisabled: {
-    backgroundColor: "#F5F5F5",
-    borderColor: "#E0E0E0",
-  },
-  errorText: {
-    color: "#ff3b30",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  // iOS Modal styles - cải thiện
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  modalBackground: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  modalDragBar: {
-    alignItems: "center",
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  dragBar: {
-    width: 36,
-    height: 5,
-    backgroundColor: "#C4C4C4",
-    borderRadius: 3,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minWidth: 60,
-    alignItems: "center",
-  },
-  confirmButton: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  modalTitleContainer: {
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#333",
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 2,
-  },
-  modalCancelButton: {
-    fontSize: 17,
-    color: "#FF3B30",
-    fontWeight: "500",
-  },
-  modalConfirmButton: {
-    fontSize: 17,
-    color: "#6B4EFF",
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E5E5E5",
-    marginHorizontal: 0,
-  },
-  iosPicker: {
-    height: 216,
-    backgroundColor: "#fff",
-  },
-  todayButton: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: "#F5F5F5",
-    alignItems: "center",
-  },
-  todayButtonText: {
-    fontSize: 16,
-    color: "#6B4EFF",
-    fontWeight: "600",
-  },
-
-});
+const createStyles = (tokens: typeof themeTokens.dark) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: 16,
+      width: "100%",
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "600",
+      marginBottom: 8,
+    },
+    required: {
+      color: tokens.error,
+    },
+    inputContainer: {
+      borderWidth: 1,
+      borderRadius: 12,
+      minHeight: 50,
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 12,
+    },
+    calendarIcon: {
+      marginRight: 10,
+    },
+    dropdownIcon: {
+      marginLeft: 8,
+    },
+    inputText: {
+      flex: 1,
+      fontSize: 16,
+      paddingVertical: 12,
+    },
+    clearButton: {
+      padding: 4,
+    },
+    inputError: {
+      borderWidth: 1.5,
+    },
+    // iOS Modal styles
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    modalBackground: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.4)",
+    },
+    modalContent: {
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingBottom: Platform.OS === "ios" ? 34 : 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 10,
+    },
+    modalDragBar: {
+      alignItems: "center",
+      paddingTop: 12,
+      paddingBottom: 8,
+    },
+    dragBar: {
+      width: 36,
+      height: 5,
+      borderRadius: 3,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    modalButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      minWidth: 60,
+      alignItems: "center",
+    },
+    confirmButton: {
+      flexDirection: "row",
+      gap: 4,
+    },
+    modalTitleContainer: {
+      alignItems: "center",
+    },
+    modalTitle: {
+      fontSize: 17,
+      fontWeight: "600",
+    },
+    modalSubtitle: {
+      fontSize: 12,
+      marginTop: 2,
+    },
+    modalCancelButton: {
+      fontSize: 17,
+      fontWeight: "500",
+    },
+    modalConfirmButton: {
+      fontSize: 17,
+      fontWeight: "600",
+      marginLeft: 4,
+    },
+    divider: {
+      height: 1,
+      marginHorizontal: 0,
+    },
+    iosPicker: {
+      height: 216,
+    },
+    todayButton: {
+      marginHorizontal: 20,
+      marginTop: 12,
+      marginBottom: 8,
+      paddingVertical: 12,
+      borderRadius: 12,
+      alignItems: "center",
+    },
+    todayButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    errorText: {
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft: 4,
+    },
+  });
 
 export default DatePickerComponent;

@@ -1,12 +1,13 @@
 // components/PassworComponent.tsx
+import { themeTokens, useThemeStore } from "@/store/themeStore";
 import { Eye, EyeOff } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  TextInput,
-  Text,
-  View,
-  TouchableOpacity,
-  StyleSheet,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 interface PassworComponentProps {
@@ -27,19 +28,37 @@ const PassworComponent: React.FC<PassworComponentProps> = ({
   touched,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const { resolvedTheme } = useThemeStore();
+  const tokens = themeTokens[resolvedTheme];
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+
+  const isError = !!touched && !!error;
+  const label = info.label;
+  const accessibilityLabel = info.accessibilityLabel || label || "Password";
 
   return (
     <View style={styles.container}>
-      {info.label && <Text style={styles.label}>{info.label}</Text>}
+      {label && <Text style={styles.label}>{label}</Text>}
       <View style={styles.inputWrapper}>
+        {info.icon ? <View style={styles.leftIcon}>{info.icon}</View> : null}
         <TextInput
-          style={[styles.input, touched && error && styles.inputError]}
+          style={[
+            styles.input,
+            info.icon && styles.inputWithIcon,
+            isError && styles.inputError,
+          ]}
           value={value?.toString() || ""}
           onChangeText={onChange}
           onBlur={onBlur}
           placeholder={info.placeholder}
+          placeholderTextColor={tokens.subtext}
           secureTextEntry={!showPassword}
           editable={!info.readonly && !info.disabled}
+          autoFocus={info.autofocus}
+          returnKeyType={info.returnKeyType}
+          onSubmitEditing={info.onSubmitEditing}
+          blurOnSubmit={info.blurOnSubmit}
+          accessibilityLabel={accessibilityLabel}
         />
         <TouchableOpacity
           style={styles.eyeButton}
@@ -47,53 +66,73 @@ const PassworComponent: React.FC<PassworComponentProps> = ({
         >
           <Text>
             {showPassword ? (
-              <EyeOff size={18} color="#6b7280" />
+              <EyeOff size={18} color={tokens.subtext} />
             ) : (
-              <Eye size={18} color="#6b7280" />
+              <Eye size={18} color={tokens.subtext} />
             )}
           </Text>
         </TouchableOpacity>
       </View>
-      {touched && error && <Text style={styles.errorText}>{error}</Text>}
+      {isError && (
+        <Text
+          style={styles.errorText}
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+        >
+          {error}
+        </Text>
+      )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#333",
-  },
-  inputWrapper: {
-    position: "relative",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    paddingRight: 40,
-  },
-  inputError: {
-    borderColor: "#ff3b30",
-  },
-  eyeButton: {
-    position: "absolute",
-    right: 12,
-    top: 12,
-  },
-  errorText: {
-    color: "#ff3b30",
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
+const createStyles = (tokens: typeof themeTokens.dark) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "500",
+      marginBottom: 8,
+      color: tokens.text,
+    },
+    inputWrapper: {
+      position: "relative",
+      justifyContent: "center",
+    },
+    leftIcon: {
+      position: "absolute",
+      left: 12,
+      zIndex: 1,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: tokens.border,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      fontSize: 16,
+      backgroundColor: tokens.surface,
+      color: tokens.text,
+      paddingRight: 40,
+    },
+    inputWithIcon: {
+      paddingLeft: 40,
+    },
+    inputError: {
+      borderColor: tokens.danger,
+    },
+    eyeButton: {
+      position: "absolute",
+      right: 12,
+      top: 12,
+    },
+    errorText: {
+      color: tokens.danger,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  });
 
 export default PassworComponent;

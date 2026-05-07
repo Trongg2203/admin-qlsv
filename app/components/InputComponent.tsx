@@ -1,6 +1,7 @@
 // components/InputComponent.tsx
-import React from "react";
-import { TextInput, Text, View, StyleSheet } from "react-native";
+import { themeTokens, useThemeStore } from "@/store/themeStore";
+import React, { useMemo } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 interface InputComponentProps {
   value: any;
@@ -19,50 +20,93 @@ const InputComponent: React.FC<InputComponentProps> = ({
   error,
   touched,
 }) => {
+  const { resolvedTheme } = useThemeStore();
+  const tokens = themeTokens[resolvedTheme];
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+
+  const isError = !!touched && !!error;
+  const label = info.label;
+  const accessibilityLabel = info.accessibilityLabel || label || "Input";
+
   return (
     <View style={styles.container}>
-      {info.label && <Text style={styles.label}>{info.label}</Text>}
-      <TextInput
-        style={[styles.input, touched && error && styles.inputError]}
-        value={value?.toString() || ""}
-        onChangeText={onChange}
-        onBlur={onBlur}
-        placeholder={info.placeholder}
-        editable={!info.readonly && !info.disabled}
-        secureTextEntry={false}
-        autoFocus={info.autofocus}
-      />
-      {touched && error && <Text style={styles.errorText}>{error}</Text>}
+      {label && <Text style={styles.label}>{label}</Text>}
+      <View style={styles.inputWrapper}>
+        {info.icon ? <View style={styles.leftIcon}>{info.icon}</View> : null}
+        <TextInput
+          style={[
+            styles.input,
+            info.icon && styles.inputWithIcon,
+            isError && styles.inputError,
+          ]}
+          value={value?.toString() || ""}
+          onChangeText={onChange}
+          onBlur={onBlur}
+          placeholder={info.placeholder}
+          placeholderTextColor={tokens.subtext}
+          editable={!info.readonly && !info.disabled}
+          secureTextEntry={false}
+          autoFocus={info.autofocus}
+          returnKeyType={info.returnKeyType}
+          onSubmitEditing={info.onSubmitEditing}
+          blurOnSubmit={info.blurOnSubmit}
+          accessibilityLabel={accessibilityLabel}
+        />
+      </View>
+      {isError && (
+        <Text
+          style={styles.errorText}
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+        >
+          {error}
+        </Text>
+      )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#333",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-  inputError: {
-    borderColor: "#ff3b30",
-  },
-  errorText: {
-    color: "#ff3b30",
-    fontSize: 12,
-    marginTop: 4,
-  },
-});
+const createStyles = (tokens: typeof themeTokens.dark) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "500",
+      marginBottom: 8,
+      color: tokens.text,
+    },
+    inputWrapper: {
+      position: "relative",
+      justifyContent: "center",
+    },
+    leftIcon: {
+      position: "absolute",
+      left: 12,
+      zIndex: 1,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: tokens.border,
+      borderRadius: 10,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      fontSize: 16,
+      backgroundColor: tokens.surface,
+      color: tokens.text,
+    },
+    inputWithIcon: {
+      paddingLeft: 40,
+    },
+    inputError: {
+      borderColor: tokens.danger,
+    },
+    errorText: {
+      color: tokens.danger,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  });
 
 export default InputComponent;

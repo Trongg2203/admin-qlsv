@@ -23,18 +23,27 @@ export const API = {
     LOGIN: "/api/auth/login",
     LOGOUT: "/api/auth/logout",
     REFRESH: "",
-    REGISTER:"/api/auth/register",
+    REGISTER: "/api/auth/register",
   },
   USER: {
     DETAIL: "/api/user/detail",
     PROFILE: "/api/user/profile",
     FORGOT_PASSWORD: "/api/user/forgot-password",
-    LIST:"/api/user/list",
-    DELETE:"/api/user/delete",
+    LIST: "/api/user/list",
+    DELETE: "/api/user/delete",
   },
   USER_GOAL: {
     CREATE: "/api/user-goal/create",
     UPDATE: "/api/user-goal/update",
     GET_BY_SELF: "/api/user-goal/get-by-self",
+  },
+  FOOD: {
+    CATEGORIES: "/api/food-categories",
+    FOODS: "/api/foods",
+    BY_CATEGORY: "/api/foods/category",
+  },
+  MEAL_PLAN: {
+    GENERATE: "/api/meal-plans/generate",
+    ACTIVE: "/api/meal-plans/active",
   },
 };
