@@ -18,7 +18,7 @@ export default function AuthLayout() {
 
   if (isLoggedIn) {
     // getUserProfile();
-    return <Redirect href="/(app)/ProfileScreen" />;
+    return <Redirect href="/(app)/DailyScreen" />;
   }
   return (
     <Stack screenOptions={{ headerShown: false }}>

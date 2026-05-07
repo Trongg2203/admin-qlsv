@@ -1,20 +1,24 @@
 // components/RatingModal.tsx
 import { themeTokens, useThemeStore } from "@/store/themeStore";
+import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
-import { Toast } from "toastify-react-native";
+import ToastManager from "toastify-react-native/components/ToastManager";
 
 interface RatingModalProps {
   visible: boolean;
@@ -22,6 +26,8 @@ interface RatingModalProps {
   foodId: string;
   foodName: string;
   foodImage?: string;
+  foodImages?: Array<{ id: string; food_id: string; image_url: string; is_primary: number; sort_order: number }>;
+  loadingImages?: boolean;
   currentRating?: number;
   currentComment?: string;
   onSubmit: (foodId: string, rating: number, comment: string) => Promise<void>;
@@ -33,6 +39,8 @@ const RatingModal: React.FC<RatingModalProps> = ({
   foodId,
   foodName,
   foodImage,
+  foodImages = [],
+  loadingImages = false,
   currentRating = 0,
   currentComment = "",
   onSubmit,
@@ -54,24 +62,42 @@ const RatingModal: React.FC<RatingModalProps> = ({
     }
   }, [visible, currentRating, currentComment, foodId]);
 
+  const getPrimaryImage = () => {
+    const primaryImage = foodImages.find((img) => img.is_primary === 1);
+    return primaryImage?.image_url || foodImages[0]?.image_url || foodImage;
+  };
+
   const handleRatingPress = (selectedRating: number) => {
     setRating(selectedRating);
   };
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      Toast.warning("Vui lòng chọn số sao đánh giá", "top");
+      ToastManager.show({
+        type: "warning",
+        text1: "Vui lòng chọn số sao đánh giá",
+        position: POSITION_TOAST.TOP,
+      });
       return;
     }
 
+    Keyboard.dismiss();
     setLoading(true);
     try {
       await onSubmit(foodId, rating, comment);
-      Toast.success("Đánh giá thành công", "top");
+      ToastManager.show({
+        type: "success",
+        text1: "Đánh giá thành công",
+        position: POSITION_TOAST.TOP,
+      });
       onClose();
     } catch (error) {
       console.error("Rating error:", error);
-      Toast.error("Đánh giá thất bại, vui lòng thử lại", "top");
+      ToastManager.show({
+        type: "error",
+        text1: "Đánh giá thất bại, vui lòng thử lại",
+        position: POSITION_TOAST.TOP,
+      });
     } finally {
       setLoading(false);
     }
@@ -115,121 +141,160 @@ const RatingModal: React.FC<RatingModalProps> = ({
           activeOpacity={1}
           onPress={onClose}
         />
-        
-        <View style={[styles.modalContent, { backgroundColor: tokens.surface }]}>
-          {/* Drag Indicator */}
-          <View style={styles.dragIndicator}>
-            <View style={[styles.dragBar, { backgroundColor: tokens.border }]} />
-          </View>
 
-          {/* Header */}
-          <LinearGradient
-            colors={[tokens.accentSoft, "transparent"]}
-            style={styles.headerGradient}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View
+            style={[styles.modalContent, { backgroundColor: tokens.surface }]}
           >
-            <View style={styles.foodIconWrapper}>
-              <Ionicons name="restaurant-outline" size={32} color={tokens.accent} />
+            {/* Drag Indicator */}
+            <View style={styles.dragIndicator}>
+              <View
+                style={[styles.dragBar, { backgroundColor: tokens.border }]}
+              />
             </View>
-            <Text style={[styles.foodName, { color: tokens.text }]}>
-              {foodName}
-            </Text>
-            <Text style={[styles.ratingLabel, { color: tokens.subtext }]}>
-              Đánh giá món ăn này
-            </Text>
-          </LinearGradient>
 
-          {/* Stars Section */}
-          <View style={styles.starsContainer}>
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => handleRatingPress(star)}
-                  onMouseEnter={() => setHoveredStar(star)}
-                  onMouseLeave={() => setHoveredStar(0)}
-                  activeOpacity={0.7}
-                  style={styles.starButton}
-                >
-                  <Ionicons
-                    name={getStarIconName(star)}
-                    size={48}
-                    color={getStarColor(star)}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-            
-            {rating > 0 && (
-              <View style={styles.ratingFeedback}>
-                <Text style={styles.ratingEmoji}>{currentRatingEmoji.emoji}</Text>
-                <Text style={[styles.ratingLabelText, { color: currentRatingEmoji.color }]}>
-                  {currentRatingEmoji.label}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Comment Section */}
-          <View style={styles.commentSection}>
-            <Text style={[styles.commentLabel, { color: tokens.text }]}>
-              Nhận xét (không bắt buộc)
-            </Text>
-            <TextInput
-              style={[
-                styles.commentInput,
-                {
-                  backgroundColor: tokens.card,
-                  borderColor: tokens.border,
-                  color: tokens.text,
-                },
-              ]}
-              placeholder="Chia sẻ cảm nhận của bạn về món ăn này..."
-              placeholderTextColor={tokens.subtext}
-              value={comment}
-              onChangeText={setComment}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-            <Text style={[styles.commentHint, { color: tokens.subtext }]}>
-              {comment.length}/200 ký tự
-            </Text>
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: tokens.border }]}
-              onPress={onClose}
-              disabled={loading}
+            {/* Header */}
+            <LinearGradient
+              colors={[tokens.accentSoft, "transparent"]}
+              style={styles.headerGradient}
             >
-              <Text style={[styles.cancelButtonText, { color: tokens.subtext }]}>
-                Hủy
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                { backgroundColor: tokens.accent },
-                rating === 0 && styles.submitButtonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={loading || rating === 0}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color={tokens.background} />
+              {loadingImages ? (
+                <View style={styles.foodImagePlaceholder}>
+                  <ActivityIndicator size="small" color={tokens.accent} />
+                </View>
+              ) : getPrimaryImage() ? (
+                <Image
+                  source={{ uri: getPrimaryImage() }}
+                  style={styles.foodImage}
+                />
               ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={20} color={tokens.background} />
-                  <Text style={[styles.submitButtonText, { color: tokens.background }]}>
-                    Gửi đánh giá
-                  </Text>
-                </>
+                <View style={styles.foodIconWrapper}>
+                  <Ionicons
+                    name="restaurant-outline"
+                    size={32}
+                    color={tokens.accent}
+                  />
+                </View>
               )}
-            </TouchableOpacity>
+              <Text style={[styles.foodName, { color: tokens.text }]}>
+                {foodName}
+              </Text>
+              <Text style={[styles.ratingLabel, { color: tokens.subtext }]}>
+                Đánh giá món ăn này
+              </Text>
+            </LinearGradient>
+
+            {/* Stars Section */}
+            <View style={styles.starsContainer}>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => handleRatingPress(star)}
+                    onMouseEnter={() => setHoveredStar(star)}
+                    onMouseLeave={() => setHoveredStar(0)}
+                    activeOpacity={0.7}
+                    style={styles.starButton}
+                  >
+                    <Ionicons
+                      name={getStarIconName(star)}
+                      size={48}
+                      color={getStarColor(star)}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {rating > 0 && (
+                <View style={styles.ratingFeedback}>
+                  <Text style={styles.ratingEmoji}>
+                    {currentRatingEmoji.emoji}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.ratingLabelText,
+                      { color: currentRatingEmoji.color },
+                    ]}
+                  >
+                    {currentRatingEmoji.label}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Comment Section */}
+            <View style={styles.commentSection}>
+              <Text style={[styles.commentLabel, { color: tokens.text }]}>
+                Nhận xét (không bắt buộc)
+              </Text>
+              <TextInput
+                style={[
+                  styles.commentInput,
+                  {
+                    backgroundColor: tokens.card,
+                    borderColor: tokens.border,
+                    color: tokens.text,
+                  },
+                ]}
+                placeholder="Chia sẻ cảm nhận của bạn về món ăn này..."
+                placeholderTextColor={tokens.subtext}
+                value={comment}
+                onChangeText={setComment}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+              <Text style={[styles.commentHint, { color: tokens.subtext }]}>
+                {comment.length}/200 ký tự
+              </Text>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.cancelButton, { borderColor: tokens.border }]}
+                onPress={onClose}
+                disabled={loading}
+              >
+                <Text
+                  style={[styles.cancelButtonText, { color: tokens.subtext }]}
+                >
+                  Hủy
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  { backgroundColor: tokens.accent },
+                  rating === 0 && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={loading || rating === 0}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={tokens.background} />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={tokens.background}
+                    />
+                    <Text
+                      style={[
+                        styles.submitButtonText,
+                        { color: tokens.background },
+                      ]}
+                    >
+                      Gửi đánh giá
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -275,6 +340,21 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
       paddingTop: 12,
     },
     foodIconWrapper: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: tokens.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 12,
+    },
+    foodImage: {
+      width: 100,
+      height: 100,
+      borderRadius: 16,
+      marginBottom: 12,
+    },
+    foodImagePlaceholder: {
       width: 64,
       height: 64,
       borderRadius: 32,

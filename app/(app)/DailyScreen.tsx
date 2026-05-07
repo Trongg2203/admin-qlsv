@@ -1,7 +1,11 @@
+import http from "@/api/http";
+import RatingModal from "@/app/Screen/RatingModal";
 import { Fonts } from "@/constants/theme";
 import { useMealPlanStore } from "@/store/mealPlanStore";
 import { themeTokens, useThemeStore } from "@/store/themeStore";
 import { MealPlanDetail } from "@/typings/interfaces/mealPlan/mealPlan";
+import { ApiResult } from "@/typings/interfaces/result/apiResult";
+import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import { tabBarScrollY } from "@/utils/tabBarScroll";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,7 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Toast } from "toastify-react-native";
+import ToastManager from "toastify-react-native/components/ToastManager";
 
 const { width } = Dimensions.get("window");
 
@@ -96,6 +100,8 @@ export default function DailyScreen() {
 
   const [selectedDay, setSelectedDay] = useState(1);
   const [queueCount, setQueueCount] = useState(0);
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [selectedFood, setSelectedFood] = useState<MealPlanDetail | null>(null);
 
   const timelineAnim = useRef(new Animated.Value(1)).current;
   const queueAnim = useRef(new Animated.Value(1)).current;
@@ -165,10 +171,63 @@ export default function DailyScreen() {
   const handleGenerate = async () => {
     const response = await generateMealPlan({});
     if (!response) {
-      Toast.error("Tạo thực đơn thất bại", "top");
+      ToastManager.show({
+        type: "error",
+        text1: "Tạo thực đơn thất bại",
+        position: POSITION_TOAST.TOP,
+      });
       return;
     }
-    Toast.success("Tạo thực đơn thành công", "top");
+    ToastManager.show({
+      type: "success",
+      text1: "Tạo thực đơn thành công",
+      position: POSITION_TOAST.TOP,
+    });
+  };
+
+  const handleRatingSubmit = async (
+    foodId: string,
+    rating: number,
+    comment: string,
+  ) => {
+    try {
+      const response = await http.post<ApiResult>("/api/food-ratings/rate", {
+        food_id: foodId,
+        rating,
+        comment,
+      });
+
+      if (!response) {
+        throw new Error("Gửi đánh giá thất bại");
+      }
+
+      ToastManager.show({
+        type: "success",
+        text1: "Đánh giá thành công",
+        text2: response.message || "Cảm ơn bạn đã đánh giá món ăn",
+        position: POSITION_TOAST.TOP,
+      });
+
+      setRatingModalVisible(false);
+      setSelectedFood(null);
+    } catch (error: any) {
+      console.error("Rating error:", error);
+
+      ToastManager.show({
+        type: "error",
+        text1: "Gửi đánh giá thất bại",
+        text2:
+          error?.response?.data?.message || error?.message || "Đã xảy ra lỗi",
+        position: POSITION_TOAST.TOP,
+      });
+
+      throw error;
+    }
+  };
+
+  const handleCloseRatingModal = () => {
+    setRatingModalVisible(false);
+    setSelectedFood(null);
   };
 
   const renderDayCard = ({ item }: { item: number }) => {
@@ -247,26 +306,37 @@ export default function DailyScreen() {
   };
 
   const renderMealCard = (item: MealPlanDetail, index: number) => {
+    const handleFoodPress = () => {
+      setSelectedFood(item);
+      setRatingModalVisible(true);
+    };
+
     return (
-      <View key={`${item.id}-${index}`} style={styles.mealCard}>
-        <Image
-          source={{
-            uri: item.food?.image_url ?? getRandomImage(index),
-          }}
-          style={styles.mealImage}
-        />
-        <View style={styles.mealInfo}>
-          <Text style={styles.mealName}>{item.food?.name ?? "Món ăn"}</Text>
-          <Text style={styles.mealMeta}>
-            {Math.round(toNumber(item.total_calories))} kcal ·{" "}
-            {toNumber(item.total_protein)}g P · {toNumber(item.total_carbs)}g C
-            · {toNumber(item.total_fat)}g F
-          </Text>
-          <View style={styles.mealFooter}>
-            <Text style={styles.mealServings}>Khẩu phần {item.servings}</Text>
+      <TouchableOpacity
+        key={`${item.id}-${index}`}
+        onPress={handleFoodPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.mealCard}>
+          <Image
+            source={{
+              uri: item.food?.image_url ?? getRandomImage(index),
+            }}
+            style={styles.mealImage}
+          />
+          <View style={styles.mealInfo}>
+            <Text style={styles.mealName}>{item.food?.name ?? "Món ăn"}</Text>
+            <Text style={styles.mealMeta}>
+              {Math.round(toNumber(item.total_calories))} kcal ·{" "}
+              {toNumber(item.total_protein)}g P · {toNumber(item.total_carbs)}g
+              C · {toNumber(item.total_fat)}g F
+            </Text>
+            <View style={styles.mealFooter}>
+              <Text style={styles.mealServings}>Khẩu phần {item.servings}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -439,6 +509,15 @@ export default function DailyScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+
+      <RatingModal
+        visible={ratingModalVisible}
+        onClose={handleCloseRatingModal}
+        foodId={selectedFood?.food?.id ?? ""}
+        foodName={selectedFood?.food?.name ?? ""}
+        foodImage={selectedFood?.food?.image_url}
+        onSubmit={handleRatingSubmit}
+      />
     </View>
   );
 }
