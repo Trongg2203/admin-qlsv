@@ -3,6 +3,7 @@ import settingTargetService from "@/services/settingTargetService";
 import { useErrorStore } from "@/store/errorStore";
 import { useLoadingStore } from "@/store/loadingStore";
 import { useSettingTargetStore } from "@/store/settingTargetStore";
+import { themeTokens, useThemeStore } from "@/store/themeStore";
 import { CreateSettingTarget } from "@/typings/interfaces/settingTarget/settingTarget";
 import { DateFormat } from "@/typings/types/DateType";
 import { MasterComponentItem } from "@/typings/types/form.types";
@@ -10,28 +11,31 @@ import { GOALTYPE } from "@/typings/types/GoalType";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import { addDays, getCurrentDate } from "@/utils/dateHelpers";
 import { scale } from "@/utils/responsive";
-import { useCallback, useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Dimensions,
 } from "react-native";
 import { Toast } from "toastify-react-native";
 import ButtonComponent from "../components/ButtonComponent";
-import FromComponent from "../components/form/FormComponent";
 import ErrorDialog from "../components/UI/ErrorDialog";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import FormComponent from "../components/form/FormComponent";
 
 const { width } = Dimensions.get("window");
 
 export default function SettingTarget() {
   const loadingStore = useLoadingStore();
   const settingTargetStore = useSettingTargetStore();
+  const { resolvedTheme } = useThemeStore();
+  const tokens = themeTokens[resolvedTheme];
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
 
   const { hasError, clearError } = useErrorStore();
   const [showErrorDialog, setShowErrorDialog] = useState(false);
@@ -173,7 +177,7 @@ export default function SettingTarget() {
         direction: "row",
         label: "Trạng thái mục tiêu",
         options: [
-          { label: "Chưa đạt", value: GOALSTATUS.ACTIVE },
+          { label: "Đang hoạt động", value: GOALSTATUS.ACTIVE },
           { label: "Tạm dừng", value: GOALSTATUS.PAUSED },
           { label: "Đã đạt", value: GOALSTATUS.COMPLETED },
           { label: "Bị hủy", value: GOALSTATUS.ANBANDONED },
@@ -349,8 +353,22 @@ export default function SettingTarget() {
     return Math.min((currentChange / totalChange) * 100, 100);
   };
 
+  const getGoalGradient = (goalType: number) => {
+    if (goalType === GOALTYPE.LOSE_WEIGHT)
+      return ["#EF4444", "#F87171"] as const;
+    if (goalType === GOALTYPE.GAIN_WEIGHT)
+      return ["#10B981", "#34D399"] as const;
+    return ["#3B82F6", "#60A5FA"] as const;
+  };
+
+  const getProgressColor = (goalType: number) => {
+    if (goalType === GOALTYPE.LOSE_WEIGHT) return "#EF4444";
+    if (goalType === GOALTYPE.GAIN_WEIGHT) return "#10B981";
+    return "#3B82F6";
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: tokens.background }]}>
       {showForm ? (
         <>
           <LinearGradient
@@ -371,10 +389,13 @@ export default function SettingTarget() {
             <View style={{ width: 40 }} />
           </LinearGradient>
           <ScrollView
-            style={styles.formScrollView}
+            style={[
+              styles.formScrollView,
+              { backgroundColor: tokens.background },
+            ]}
             showsVerticalScrollIndicator={false}
           >
-            <FromComponent
+            <FormComponent
               fields={formFields}
               initialValues={formData}
               onSubmit={handleSubmit}
@@ -405,17 +426,26 @@ export default function SettingTarget() {
           </LinearGradient>
 
           <ScrollView
-            style={styles.listContainer}
+            style={[
+              styles.listContainer,
+              { backgroundColor: tokens.background },
+            ]}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
           >
             {goals.length > 0 ? (
               goals.map((goal, index) => {
                 const progress = calculateProgress(goal);
+                const goalGradient = getGoalGradient(goal.goal_type);
+                const progressColor = getProgressColor(goal.goal_type);
+
                 return (
                   <View
                     key={goal.id ?? `goal-${index}`}
-                    style={styles.goalCardWrapper}
+                    style={[
+                      styles.goalCardWrapper,
+                      { backgroundColor: tokens.surface },
+                    ]}
                   >
                     <TouchableOpacity
                       style={styles.goalCard}
@@ -424,13 +454,7 @@ export default function SettingTarget() {
                     >
                       {/* Card Header với màu sắc theo loại mục tiêu */}
                       <LinearGradient
-                        colors={
-                          goal.goal_type === GOALTYPE.LOSE_WEIGHT
-                            ? ["#EF4444", "#F87171"]
-                            : goal.goal_type === GOALTYPE.GAIN_WEIGHT
-                              ? ["#10B981", "#34D399"]
-                              : ["#3B82F6", "#60A5FA"]
-                        }
+                        colors={goalGradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.cardGradientHeader}
@@ -472,10 +496,26 @@ export default function SettingTarget() {
                       {/* Weight Display */}
                       <View style={styles.weightContainer}>
                         <View style={styles.weightBox}>
-                          <Text style={styles.weightLabel}>Hiện tại</Text>
-                          <Text style={styles.weightValue}>
+                          <Text
+                            style={[
+                              styles.weightLabel,
+                              { color: tokens.subtext },
+                            ]}
+                          >
+                            Hiện tại
+                          </Text>
+                          <Text
+                            style={[styles.weightValue, { color: tokens.text }]}
+                          >
                             {goal.start_weight}
-                            <Text style={styles.weightUnit}>kg</Text>
+                            <Text
+                              style={[
+                                styles.weightUnit,
+                                { color: tokens.subtext },
+                              ]}
+                            >
+                              kg
+                            </Text>
                           </Text>
                         </View>
 
@@ -493,10 +533,26 @@ export default function SettingTarget() {
                         </View>
 
                         <View style={styles.weightBox}>
-                          <Text style={styles.weightLabel}>Mục tiêu</Text>
-                          <Text style={styles.weightValue}>
+                          <Text
+                            style={[
+                              styles.weightLabel,
+                              { color: tokens.subtext },
+                            ]}
+                          >
+                            Mục tiêu
+                          </Text>
+                          <Text
+                            style={[styles.weightValue, { color: tokens.text }]}
+                          >
                             {goal.target_weight}
-                            <Text style={styles.weightUnit}>kg</Text>
+                            <Text
+                              style={[
+                                styles.weightUnit,
+                                { color: tokens.subtext },
+                              ]}
+                            >
+                              kg
+                            </Text>
                           </Text>
                         </View>
                       </View>
@@ -505,21 +561,35 @@ export default function SettingTarget() {
                       {goal.goal_type !== GOALTYPE.MAINTAIN_WEIGHT && (
                         <View style={styles.progressSection}>
                           <View style={styles.progressHeader}>
-                            <Text style={styles.progressLabel}>Tiến độ</Text>
-                            <Text style={styles.progressPercent}>
+                            <Text
+                              style={[
+                                styles.progressLabel,
+                                { color: tokens.subtext },
+                              ]}
+                            >
+                              Tiến độ
+                            </Text>
+                            <Text
+                              style={[
+                                styles.progressPercent,
+                                { color: progressColor },
+                              ]}
+                            >
                               {progress.toFixed(0)}%
                             </Text>
                           </View>
-                          <View style={styles.progressBarBg}>
+                          <View
+                            style={[
+                              styles.progressBarBg,
+                              { backgroundColor: tokens.border },
+                            ]}
+                          >
                             <View
                               style={[
                                 styles.progressBarFill,
                                 {
                                   width: `${progress}%`,
-                                  backgroundColor:
-                                    goal.goal_type === GOALTYPE.LOSE_WEIGHT
-                                      ? "#EF4444"
-                                      : "#10B981",
+                                  backgroundColor: progressColor,
                                 },
                               ]}
                             />
@@ -529,19 +599,37 @@ export default function SettingTarget() {
 
                       {/* Meta Info */}
                       <View style={styles.metaSection}>
-                        <View style={styles.metaItem}>
-                          <Ionicons name="calendar" size={14} color="#94A3B8" />
-                          <Text style={styles.metaText}>
+                        <View
+                          style={[
+                            styles.metaItem,
+                            { backgroundColor: tokens.card },
+                          ]}
+                        >
+                          <Ionicons
+                            name="calendar"
+                            size={14}
+                            color={tokens.subtext}
+                          />
+                          <Text
+                            style={[styles.metaText, { color: tokens.subtext }]}
+                          >
                             {goal.start_date} → {goal.target_date}
                           </Text>
                         </View>
-                        <View style={styles.metaItem}>
+                        <View
+                          style={[
+                            styles.metaItem,
+                            { backgroundColor: tokens.card },
+                          ]}
+                        >
                           <Ionicons
                             name="speedometer"
                             size={14}
-                            color="#94A3B8"
+                            color={tokens.subtext}
                           />
-                          <Text style={styles.metaText}>
+                          <Text
+                            style={[styles.metaText, { color: tokens.subtext }]}
+                          >
                             {goal.weekly_change_rate} kg/tuần
                           </Text>
                         </View>
@@ -550,15 +638,28 @@ export default function SettingTarget() {
 
                     {/* Delete Button */}
                     <TouchableOpacity
-                      style={styles.deleteButton}
+                      style={[
+                        styles.deleteButton,
+                        {
+                          backgroundColor: tokens.accentSoft,
+                          borderTopColor: tokens.border,
+                        },
+                      ]}
                       onPress={() => handleDeleteGoal(goal)}
                     >
                       <Ionicons
                         name="trash-outline"
                         size={18}
-                        color="#EF4444"
+                        color={tokens.error}
                       />
-                      <Text style={styles.deleteButtonText}>Xóa mục tiêu</Text>
+                      <Text
+                        style={[
+                          styles.deleteButtonText,
+                          { color: tokens.error },
+                        ]}
+                      >
+                        Xóa mục tiêu
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 );
@@ -566,20 +667,28 @@ export default function SettingTarget() {
             ) : (
               <View style={styles.emptyState}>
                 <LinearGradient
-                  colors={["#F3F4F6", "#E5E7EB"]}
+                  colors={[tokens.card, tokens.border]}
                   style={styles.emptyIconWrapper}
                 >
-                  <Ionicons name="flag-outline" size={48} color="#9CA3AF" />
+                  <Ionicons
+                    name="flag-outline"
+                    size={48}
+                    color={tokens.subtext}
+                  />
                 </LinearGradient>
-                <Text style={styles.emptyTitle}>Chưa có mục tiêu</Text>
-                <Text style={styles.emptyDescription}>
+                <Text style={[styles.emptyTitle, { color: tokens.text }]}>
+                  Chưa có mục tiêu
+                </Text>
+                <Text
+                  style={[styles.emptyDescription, { color: tokens.subtext }]}
+                >
                   Hãy tạo mục tiêu đầu tiên để bắt đầu hành trình của bạn
                 </Text>
               </View>
             )}
           </ScrollView>
 
-          {/* Floating Action Button when has goals */}
+          {/* Floating Action Button */}
           {goals.length === 0 && (
             <TouchableOpacity
               style={styles.fab}
@@ -606,284 +715,252 @@ export default function SettingTarget() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  gradientHeader: {
-    paddingTop: scale(48),
-    paddingBottom: scale(32),
-    paddingHorizontal: scale(20),
-    borderBottomLeftRadius: scale(24),
-    borderBottomRightRadius: scale(24),
-  },
-  headerContent: {
-    alignItems: "center",
-  },
-  headerIconWrapper: {
-    width: scale(64),
-    height: scale(64),
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: scale(32),
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: scale(12),
-  },
-  headerTitle: {
-    fontSize: scale(24),
-    fontWeight: "bold",
-    color: "#FFF",
-    marginBottom: scale(4),
-  },
-  headerSubtitle: {
-    fontSize: scale(14),
-    color: "rgba(255,255,255,0.9)",
-  },
-  listContainer: {
-    flex: 1,
-    marginTop: scale(-16),
-  },
-  listContent: {
-    paddingBottom: scale(100),
-    paddingHorizontal: scale(16),
-  },
-  goalCardWrapper: {
-    marginBottom: scale(16),
-    borderRadius: scale(16),
-    backgroundColor: "#FFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  goalCard: {
-    overflow: "hidden",
-    borderRadius: scale(16),
-  },
-  cardGradientHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(12),
-  },
-  cardHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(8),
-  },
-  cardIconContainer: {
-    width: scale(36),
-    height: scale(36),
-    borderRadius: scale(18),
-    backgroundColor: "rgba(255,255,255,0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardGoalType: {
-    fontSize: scale(16),
-    fontWeight: "bold",
-    color: "#FFF",
-  },
-  activeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FEF3C7",
-    paddingHorizontal: scale(10),
-    paddingVertical: scale(4),
-    borderRadius: scale(12),
-    gap: scale(4),
-  },
-  activeBadgeText: {
-    color: "#D97706",
-    fontSize: scale(11),
-    fontWeight: "600",
-  },
-  weightContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: scale(20),
-    paddingVertical: scale(20),
-  },
-  weightBox: {
-    alignItems: "center",
-    flex: 1,
-  },
-  weightLabel: {
-    fontSize: scale(12),
-    color: "#94A3B8",
-    marginBottom: scale(8),
-    textTransform: "uppercase",
-    fontWeight: "600",
-  },
-  weightValue: {
-    fontSize: scale(28),
-    fontWeight: "bold",
-    color: "#1E293B",
-  },
-  weightUnit: {
-    fontSize: scale(14),
-    fontWeight: "normal",
-    color: "#94A3B8",
-  },
-  weightArrowContainer: {
-    paddingHorizontal: scale(12),
-  },
-  weightArrowCircle: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: scale(16),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  progressSection: {
-    paddingHorizontal: scale(16),
-    paddingBottom: scale(16),
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: scale(8),
-  },
-  progressLabel: {
-    fontSize: scale(12),
-    color: "#64748B",
-    fontWeight: "600",
-  },
-  progressPercent: {
-    fontSize: scale(14),
-    fontWeight: "bold",
-    color: "#EF4444",
-  },
-  progressBarBg: {
-    height: scale(8),
-    backgroundColor: "#F1F5F9",
-    borderRadius: scale(4),
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: scale(4),
-  },
-  metaSection: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: scale(16),
-    paddingBottom: scale(16),
-    gap: scale(12),
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: scale(6),
-    backgroundColor: "#F8FAFC",
-    paddingHorizontal: scale(12),
-    paddingVertical: scale(6),
-    borderRadius: scale(8),
-    flex: 1,
-  },
-  metaText: {
-    fontSize: scale(11),
-    color: "#64748B",
-  },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: scale(12),
-    backgroundColor: "#FEF2F2",
-    borderTopWidth: 1,
-    borderTopColor: "#FEE2E2",
-    gap: scale(8),
-  },
-  deleteButtonText: {
-    color: "#EF4444",
-    fontSize: scale(13),
-    fontWeight: "600",
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: scale(60),
-    paddingHorizontal: scale(32),
-  },
-  emptyIconWrapper: {
-    width: scale(100),
-    height: scale(100),
-    borderRadius: scale(50),
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: scale(20),
-  },
-  emptyTitle: {
-    fontSize: scale(18),
-    fontWeight: "bold",
-    color: "#1E293B",
-    marginBottom: scale(8),
-  },
-  emptyDescription: {
-    fontSize: scale(14),
-    color: "#94A3B8",
-    textAlign: "center",
-    lineHeight: scale(20),
-  },
-  addButtonWrapper: {
-    marginTop: scale(20),
-    marginBottom: scale(20),
-  },
-  addButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(24),
-    borderRadius: scale(12),
-    gap: scale(8),
-  },
-  addButtonText: {
-    fontSize: scale(16),
-    fontWeight: "bold",
-    color: "#FFF",
-  },
-  fab: {
-    position: "absolute",
-    bottom: scale(24),
-    right: scale(24),
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  fabGradient: {
-    width: scale(56),
-    height: scale(56),
-    borderRadius: scale(28),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  formHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: scale(48),
-    paddingBottom: scale(20),
-    paddingHorizontal: scale(16),
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-  },
-  formHeaderText: {
-    fontSize: scale(18),
-    fontWeight: "bold",
-    color: "#FFF",
-  },
-  formScrollView: {
-    flex: 1,
-  },
-});
+const createStyles = (tokens: typeof themeTokens.dark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    gradientHeader: {
+      paddingTop: scale(48),
+      paddingBottom: scale(32),
+      paddingHorizontal: scale(20),
+      borderBottomLeftRadius: scale(24),
+      borderBottomRightRadius: scale(24),
+    },
+    headerContent: {
+      alignItems: "center",
+    },
+    headerIconWrapper: {
+      width: scale(64),
+      height: scale(64),
+      backgroundColor: "rgba(255,255,255,0.2)",
+      borderRadius: scale(32),
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: scale(12),
+    },
+    headerTitle: {
+      fontSize: scale(24),
+      fontWeight: "bold",
+      color: "#FFF",
+      marginBottom: scale(4),
+    },
+    headerSubtitle: {
+      fontSize: scale(14),
+      color: "rgba(255,255,255,0.9)",
+    },
+    listContainer: {
+      flex: 1,
+      marginTop: scale(-16),
+    },
+    listContent: {
+      paddingBottom: scale(100),
+      paddingHorizontal: scale(16),
+    },
+    goalCardWrapper: {
+      marginBottom: scale(16),
+      borderRadius: scale(16),
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 5,
+      overflow: "hidden",
+    },
+    goalCard: {
+      overflow: "hidden",
+    },
+    cardGradientHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: scale(16),
+      paddingVertical: scale(12),
+    },
+    cardHeaderLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(8),
+    },
+    cardIconContainer: {
+      width: scale(36),
+      height: scale(36),
+      borderRadius: scale(18),
+      backgroundColor: "rgba(255,255,255,0.2)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    cardGoalType: {
+      fontSize: scale(16),
+      fontWeight: "bold",
+      color: "#FFF",
+    },
+    activeBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#FEF3C7",
+      paddingHorizontal: scale(10),
+      paddingVertical: scale(4),
+      borderRadius: scale(12),
+      gap: scale(4),
+    },
+    activeBadgeText: {
+      color: "#D97706",
+      fontSize: scale(11),
+      fontWeight: "600",
+    },
+    weightContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: scale(20),
+      paddingVertical: scale(20),
+    },
+    weightBox: {
+      alignItems: "center",
+      flex: 1,
+    },
+    weightLabel: {
+      fontSize: scale(12),
+      marginBottom: scale(8),
+      textTransform: "uppercase",
+      fontWeight: "600",
+    },
+    weightValue: {
+      fontSize: scale(28),
+      fontWeight: "bold",
+    },
+    weightUnit: {
+      fontSize: scale(14),
+      fontWeight: "normal",
+    },
+    weightArrowContainer: {
+      paddingHorizontal: scale(12),
+    },
+    weightArrowCircle: {
+      width: scale(32),
+      height: scale(32),
+      borderRadius: scale(16),
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    progressSection: {
+      paddingHorizontal: scale(16),
+      paddingBottom: scale(16),
+    },
+    progressHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: scale(8),
+    },
+    progressLabel: {
+      fontSize: scale(12),
+      fontWeight: "600",
+    },
+    progressPercent: {
+      fontSize: scale(14),
+      fontWeight: "bold",
+    },
+    progressBarBg: {
+      height: scale(8),
+      borderRadius: scale(4),
+      overflow: "hidden",
+    },
+    progressBarFill: {
+      height: "100%",
+      borderRadius: scale(4),
+    },
+    metaSection: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: scale(16),
+      paddingBottom: scale(16),
+      gap: scale(12),
+    },
+    metaItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(6),
+      paddingHorizontal: scale(12),
+      paddingVertical: scale(6),
+      borderRadius: scale(8),
+      flex: 1,
+    },
+    metaText: {
+      fontSize: scale(11),
+    },
+    deleteButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: scale(12),
+      borderTopWidth: 1,
+      gap: scale(8),
+    },
+    deleteButtonText: {
+      fontSize: scale(13),
+      fontWeight: "600",
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: scale(60),
+      paddingHorizontal: scale(32),
+    },
+    emptyIconWrapper: {
+      width: scale(100),
+      height: scale(100),
+      borderRadius: scale(50),
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: scale(20),
+    },
+    emptyTitle: {
+      fontSize: scale(18),
+      fontWeight: "bold",
+      marginBottom: scale(8),
+    },
+    emptyDescription: {
+      fontSize: scale(14),
+      textAlign: "center",
+      lineHeight: scale(20),
+    },
+    fab: {
+      position: "absolute",
+      bottom: scale(24),
+      right: scale(24),
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      elevation: 6,
+    },
+    fabGradient: {
+      width: scale(56),
+      height: scale(56),
+      borderRadius: scale(28),
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    formHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingTop: scale(48),
+      paddingBottom: scale(20),
+      paddingHorizontal: scale(16),
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      justifyContent: "center",
+    },
+    formHeaderText: {
+      fontSize: scale(18),
+      fontWeight: "bold",
+      color: "#FFF",
+    },
+    formScrollView: {
+      flex: 1,
+    },
+  });
