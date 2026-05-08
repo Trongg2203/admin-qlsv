@@ -439,7 +439,7 @@ export default function DailyScreen() {
                 {items.length === 0 ? (
                   <View style={styles.mealEmptyCard}>
                     <Text style={styles.mealEmptyText}>
-                      Chưa có món. Chạm + để thêm.
+                      Chưa có món.
                     </Text>
                   </View>
                 ) : (

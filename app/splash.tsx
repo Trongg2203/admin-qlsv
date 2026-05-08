@@ -1,7 +1,23 @@
-import { Text, View, StyleSheet, Animated, Dimensions, Easing, Image } from "react-native";
+import http from "@/api/http";
+import {
+  API,
+  AUTH_TOKEN_NAME,
+  AUTH_TOKEN_REMEMBER,
+} from "@/constants/constants";
+import { useAuthStore } from "@/store/authStore";
+import AsyncStorage from "@/utils/webStorage";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
+import { useEffect, useRef } from "react";
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -12,35 +28,78 @@ export default function SplashScreen() {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
   const logoGlow = useRef(new Animated.Value(0)).current;
-  
+
   // Animations cho text
   const titleFade = useRef(new Animated.Value(0)).current;
   const titleTranslate = useRef(new Animated.Value(50)).current;
   const taglineFade = useRef(new Animated.Value(0)).current;
   const taglineTranslate = useRef(new Animated.Value(30)).current;
-  
+
   // Animations cho progress bar
   const progressWidth = useRef(new Animated.Value(0)).current;
   const progressOpacity = useRef(new Animated.Value(0)).current;
   const progressShimmer = useRef(new Animated.Value(0)).current;
-  
+
   // Animation cho các particles
-  const particles = useRef([...Array(30)].map(() => new Animated.Value(0))).current;
-  
+  const particles = useRef(
+    [...Array(30)].map(() => new Animated.Value(0)),
+  ).current;
+
   // Animation cho hiệu ứng ripple
   const rippleScale = useRef(new Animated.Value(0)).current;
   const rippleOpacity = useRef(new Animated.Value(0)).current;
-  
+
   // Animation cho vòng tròn xoay (style như GlobalLoading)
   const ringRotate1 = useRef(new Animated.Value(0)).current;
   const ringRotate2 = useRef(new Animated.Value(0)).current;
   const ringRotate3 = useRef(new Animated.Value(0)).current;
-  
+
   // Animation cho hiệu ứng loading dots
-  const dotsAnim = useRef([...Array(3)].map(() => new Animated.Value(0))).current;
-  
+  const dotsAnim = useRef(
+    [...Array(3)].map(() => new Animated.Value(0)),
+  ).current;
+
   // Animation cho hiệu ứng confetti khi kết thúc
-  const confettiAnim = useRef([...Array(50)].map(() => new Animated.Value(0))).current;
+  const confettiAnim = useRef(
+    [...Array(50)].map(() => new Animated.Value(0)),
+  ).current;
+
+  const { isLoggedIn, logout } = useAuthStore();
+
+  /**
+   * Kiểm tra token và navigate đến màn hình phù hợp
+   * - Nếu có token hợp lệ → (app)
+   * - Nếu token hết hạn/không hợp lệ → (auth)/LoginScreen
+   */
+  const checkTokenAndNavigate = async () => {
+    try {
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_NAME);
+      const isRemember = await AsyncStorage.getItem(AUTH_TOKEN_REMEMBER);
+
+      // Nếu không có token hoặc remember = false, go to login
+      if (!token || !isRemember) {
+        router.replace("/(auth)/LoginScreen");
+        return;
+      }
+
+      // Có token, kiểm tra xem nó còn hợp lệ bằng cách gọi API
+      try {
+        // Gọi API để verify token
+        await http.get<any>(API.AUTH.ME);
+
+        // Nếu thành công, navigate đến app
+        router.replace("/(app)/DailyScreen");
+      } catch (error: any) {
+        // Token hết hạn hoặc không hợp lệ
+        console.log("Token verification failed:", error);
+        await logout();
+        router.replace("/(auth)/LoginScreen");
+      }
+    } catch (error) {
+      console.error("Error checking token:", error);
+      router.replace("/(auth)/LoginScreen");
+    }
+  };
 
   useEffect(() => {
     const startAnimation = async () => {
@@ -76,57 +135,136 @@ export default function SplashScreen() {
       // 3. Glow effect cho logo
       Animated.loop(
         Animated.sequence([
-          Animated.timing(logoGlow, { toValue: 1, duration: 1000, useNativeDriver: false }),
-          Animated.timing(logoGlow, { toValue: 0, duration: 1000, useNativeDriver: false }),
-        ])
+          Animated.timing(logoGlow, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(logoGlow, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: false,
+          }),
+        ]),
       ).start();
 
       // 4. Ripple effect
       Animated.loop(
         Animated.sequence([
           Animated.parallel([
-            Animated.timing(rippleScale, { toValue: 1.5, duration: 1500, useNativeDriver: true }),
-            Animated.timing(rippleOpacity, { toValue: 0, duration: 1500, useNativeDriver: true }),
+            Animated.timing(rippleScale, {
+              toValue: 1.5,
+              duration: 1500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(rippleOpacity, {
+              toValue: 0,
+              duration: 1500,
+              useNativeDriver: true,
+            }),
           ]),
           Animated.parallel([
-            Animated.timing(rippleScale, { toValue: 0, duration: 0, useNativeDriver: true }),
-            Animated.timing(rippleOpacity, { toValue: 0.6, duration: 0, useNativeDriver: true }),
+            Animated.timing(rippleScale, {
+              toValue: 0,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+            Animated.timing(rippleOpacity, {
+              toValue: 0.6,
+              duration: 0,
+              useNativeDriver: true,
+            }),
           ]),
         ]),
-        { iterations: -1 }
+        { iterations: -1 },
       ).start();
 
       // 5. Vòng tròn xoay (style GlobalLoading)
       Animated.loop(
-        Animated.timing(ringRotate1, { toValue: 1, duration: 2000, easing: Easing.linear, useNativeDriver: true })
+        Animated.timing(ringRotate1, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
       ).start();
       Animated.loop(
-        Animated.timing(ringRotate2, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true })
+        Animated.timing(ringRotate2, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
       ).start();
       Animated.loop(
-        Animated.timing(ringRotate3, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: true })
+        Animated.timing(ringRotate3, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
       ).start();
 
       // 6. Text animation
       Animated.parallel([
-        Animated.timing(titleFade, { toValue: 1, duration: 800, delay: 300, useNativeDriver: true }),
-        Animated.timing(titleTranslate, { toValue: 0, duration: 800, delay: 300, easing: Easing.out(Easing.back(0.5)), useNativeDriver: true }),
-        Animated.timing(taglineFade, { toValue: 1, duration: 800, delay: 500, useNativeDriver: true }),
-        Animated.timing(taglineTranslate, { toValue: 0, duration: 800, delay: 500, useNativeDriver: true }),
+        Animated.timing(titleFade, {
+          toValue: 1,
+          duration: 800,
+          delay: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titleTranslate, {
+          toValue: 0,
+          duration: 800,
+          delay: 300,
+          easing: Easing.out(Easing.back(0.5)),
+          useNativeDriver: true,
+        }),
+        Animated.timing(taglineFade, {
+          toValue: 1,
+          duration: 800,
+          delay: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(taglineTranslate, {
+          toValue: 0,
+          duration: 800,
+          delay: 500,
+          useNativeDriver: true,
+        }),
       ]).start();
 
       // 7. Progress bar animation
       Animated.parallel([
-        Animated.timing(progressOpacity, { toValue: 1, duration: 500, delay: 600, useNativeDriver: true }),
-        Animated.timing(progressWidth, { toValue: width * 0.7, duration: 2200, delay: 600, easing: Easing.bezier(0.4, 0.0, 0.2, 1), useNativeDriver: false }),
+        Animated.timing(progressOpacity, {
+          toValue: 1,
+          duration: 500,
+          delay: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progressWidth, {
+          toValue: width * 0.7,
+          duration: 2200,
+          delay: 600,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+          useNativeDriver: false,
+        }),
       ]).start();
 
       // 8. Shimmer effect cho progress bar
       Animated.loop(
         Animated.sequence([
-          Animated.timing(progressShimmer, { toValue: 1, duration: 1500, useNativeDriver: true }),
-          Animated.timing(progressShimmer, { toValue: 0, duration: 1500, useNativeDriver: true }),
-        ])
+          Animated.timing(progressShimmer, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(progressShimmer, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ]),
       ).start();
 
       // 9. Particles animation
@@ -134,10 +272,20 @@ export default function SplashScreen() {
         const delay = index * 80;
         Animated.loop(
           Animated.sequence([
-            Animated.timing(particle, { toValue: 1, duration: 2500, delay, easing: Easing.linear, useNativeDriver: true }),
-            Animated.timing(particle, { toValue: 0, duration: 0, useNativeDriver: true }),
+            Animated.timing(particle, {
+              toValue: 1,
+              duration: 2500,
+              delay,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(particle, {
+              toValue: 0,
+              duration: 0,
+              useNativeDriver: true,
+            }),
           ]),
-          { iterations: -1 }
+          { iterations: -1 },
         ).start();
       });
 
@@ -145,9 +293,18 @@ export default function SplashScreen() {
       dotsAnim.forEach((dot, index) => {
         Animated.loop(
           Animated.sequence([
-            Animated.timing(dot, { toValue: 1, duration: 400, delay: index * 200, useNativeDriver: true }),
-            Animated.timing(dot, { toValue: 0, duration: 400, useNativeDriver: true }),
-          ])
+            Animated.timing(dot, {
+              toValue: 1,
+              duration: 400,
+              delay: index * 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+          ]),
         ).start();
       });
     };
@@ -167,12 +324,28 @@ export default function SplashScreen() {
 
       // Animation thoát
       Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
-        Animated.timing(scaleAnim, { toValue: 1.5, duration: 600, useNativeDriver: true }),
-        Animated.timing(titleFade, { toValue: 0, duration: 500, useNativeDriver: true }),
-        Animated.timing(progressOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
-      ]).start(() => {
-        router.replace("/(auth)/LoginScreen");
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1.5,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titleFade, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progressOpacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(async () => {
+        await checkTokenAndNavigate();
       });
     }, 3800);
 
@@ -180,16 +353,37 @@ export default function SplashScreen() {
   }, []);
 
   // Interpolations
-  const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
-  const bounce = bounceAnim.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0, -15, 0] });
-  const rippleScaleInterpolate = rippleScale.interpolate({ inputRange: [0, 1], outputRange: [1, 2] });
-  const glowSize = logoGlow.interpolate({ inputRange: [0, 1], outputRange: [0, 25] });
-  
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+  const bounce = bounceAnim.interpolate({
+    inputRange: [0, 0.6, 1],
+    outputRange: [0, -15, 0],
+  });
+  const rippleScaleInterpolate = rippleScale.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 2],
+  });
+  const glowSize = logoGlow.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 25],
+  });
+
   // Ring rotations
-  const ringSpin1 = ringRotate1.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
-  const ringSpin2 = ringRotate2.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-360deg"] });
-  const ringSpin3 = ringRotate3.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "720deg"] });
-  
+  const ringSpin1 = ringRotate1.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+  const ringSpin2 = ringRotate2.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "-360deg"],
+  });
+  const ringSpin3 = ringRotate3.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "720deg"],
+  });
+
   // Shimmer effect
   const shimmerTranslate = progressShimmer.interpolate({
     inputRange: [0, 1],
@@ -296,8 +490,8 @@ export default function SplashScreen() {
   };
 
   return (
-    <LinearGradient 
-      colors={["#0f0c29", "#302b63", "#24243e"]} 
+    <LinearGradient
+      colors={["#0f0c29", "#302b63", "#24243e"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -323,13 +517,19 @@ export default function SplashScreen() {
 
         {/* Vòng tròn xoay (style GlobalLoading) */}
         <View style={styles.ringsContainer}>
-          <Animated.View style={[styles.ringOuter, { transform: [{ rotate: ringSpin1 }] }]}>
+          <Animated.View
+            style={[styles.ringOuter, { transform: [{ rotate: ringSpin1 }] }]}
+          >
             <View style={styles.ringGradient1} />
           </Animated.View>
-          <Animated.View style={[styles.ringMiddle, { transform: [{ rotate: ringSpin2 }] }]}>
+          <Animated.View
+            style={[styles.ringMiddle, { transform: [{ rotate: ringSpin2 }] }]}
+          >
             <View style={styles.ringGradient2} />
           </Animated.View>
-          <Animated.View style={[styles.ringInner, { transform: [{ rotate: ringSpin3 }] }]} />
+          <Animated.View
+            style={[styles.ringInner, { transform: [{ rotate: ringSpin3 }] }]}
+          />
         </View>
 
         {/* Main content */}
@@ -363,7 +563,7 @@ export default function SplashScreen() {
               style={styles.logoCircle}
             >
               <Image
-                source={require('@/assets/images/logo.png')}
+                source={require("@/assets/images/logo.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -371,7 +571,6 @@ export default function SplashScreen() {
           </Animated.View>
 
           {/* Text content */}
-         
         </Animated.View>
       </View>
 
@@ -403,13 +602,11 @@ export default function SplashScreen() {
             ]}
           />
         </View>
-        
+
         {/* Loading dots */}
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Đang tải</Text>
-          <View style={styles.dotsContainer}>
-            {renderDots()}
-          </View>
+          <View style={styles.dotsContainer}>{renderDots()}</View>
         </View>
       </Animated.View>
     </LinearGradient>

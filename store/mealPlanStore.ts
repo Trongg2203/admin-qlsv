@@ -102,7 +102,7 @@ export const useMealPlanStore = create<MealPlanState>((set) => ({
         MealPlanRequest,
         MealPlanResult
       >(API.MEAL_PLAN.GENERATE, payload);
-      set({ activeMealPlan: response ?? null });
+      if (response) set({ activeMealPlan: response ?? null });
       return response ?? null;
     } finally {
       set({ loading: false });

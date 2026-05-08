@@ -22,8 +22,9 @@ export const API = {
   AUTH: {
     LOGIN: "/api/auth/login",
     LOGOUT: "/api/auth/logout",
-    REFRESH: "",
+    REFRESH: "/api/auth/refresh",
     REGISTER: "/api/auth/register",
+    ME: "/api/auth/me",
   },
   USER: {
     DETAIL: "/api/user/detail",
