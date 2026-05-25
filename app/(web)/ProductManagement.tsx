@@ -1,12 +1,12 @@
-import { useProductStore } from "@/store/productStore";
 import { usePaginationStore } from "@/store/paginationStore";
+import { useProductStore } from "@/store/productStore";
 import { Product } from "@/typings/interfaces/product/product";
 import { resolveImageUrl } from "@/utils/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Image, View } from "react-native";
 import ToastManager from "toastify-react-native/components/ToastManager";
 import TableComponent, {
-  Column,
+    Column,
 } from "../components/webComponent/TableComponent";
 import AddOrEditProduct from "./AddOrEditProduct";
 
@@ -19,10 +19,22 @@ const MEAL_TYPE_LABEL: Record<number, string> = {
 };
 
 export default function ProductManagementScreen() {
-  const { products, categories, loading, fetchProducts, fetchCategories, deleteProduct } =
-    useProductStore();
-  const { currentPage, pageSize, searchTerm, sortBy, sortOrder, resetPagination } =
-    usePaginationStore();
+  const {
+    products,
+    categories,
+    loading,
+    fetchProducts,
+    fetchCategories,
+    deleteProduct,
+  } = useProductStore();
+  const {
+    currentPage,
+    pageSize,
+    searchTerm,
+    sortBy,
+    sortOrder,
+    resetPagination,
+  } = usePaginationStore();
 
   const [showForm, setShowForm] = useState(false);
   const [isAdd, setIsAdd] = useState(true);
@@ -44,13 +56,17 @@ export default function ProductManagementScreen() {
     fetchCategories();
   }, [fetchCategories, resetPagination]);
 
-  useEffect(() => {
-    fetchProducts(productQuery);
-  }, [fetchProducts, productQuery]);
-
-  const handleRefresh = useCallback(async () => {
+  const loadProducts = useCallback(async () => {
     await fetchProducts(productQuery);
   }, [fetchProducts, productQuery]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const handleRefresh = useCallback(async () => {
+    await loadProducts();
+  }, [loadProducts]);
 
   const columns: Column[] = [
     {
@@ -60,11 +76,22 @@ export default function ProductManagementScreen() {
       render: (value) => (
         <Image
           source={{ uri: resolveImageUrl(value) }}
-          style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "#f3f4f6" }}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 6,
+            backgroundColor: "#f3f4f6",
+          }}
         />
       ),
     },
-    { key: "name", title: "Tên món", width: "22%", isSearch: true, sortable: true },
+    {
+      key: "name",
+      title: "Tên món",
+      width: "22%",
+      isSearch: true,
+      sortable: true,
+    },
     {
       key: "category_id",
       title: "Danh mục",

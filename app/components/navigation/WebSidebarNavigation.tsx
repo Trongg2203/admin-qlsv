@@ -148,7 +148,9 @@ export default function WebSidebarNavigation({
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const isAdmin = useAuthStore((s) => s.is_admin);
+  const isAdmin = useAuthStore(
+    (s) => s.is_admin && s.user_type === 1,
+  );
   const [isExpanded, setIsExpanded] = useState(true);
   const widthAnim = useRef(new Animated.Value(EXPANDED_WIDTH)).current;
   const currentRouteName = state.routes[state.index]?.name ?? "";

@@ -24,14 +24,14 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout() {
-  const { isLoggedIn, is_admin, logout } = useAuthStore();
+  const { isLoggedIn, is_admin, logout, user_type } = useAuthStore();
   const pathname = usePathname();
 
   if (!isLoggedIn) {
     return <Redirect href="/(auth)/LoginScreen" />;
   }
 
-  if (!is_admin) {
+  if (!is_admin || user_type !== 1) {
     return <Redirect href="/(app)/DailyScreen" />;
   }
 

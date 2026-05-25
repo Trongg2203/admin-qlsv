@@ -1,15 +1,15 @@
 // screens/UserManagementScreen.tsx
+import { usePaginationStore } from "@/store/paginationStore";
+import { useUserStore } from "@/store/userStore";
+import { User } from "@/typings/interfaces/user/user";
 import { Download, Eye } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { Alert, Text, View } from "react-native";
+import ToastManager from "toastify-react-native/components/ToastManager";
 import TableComponent, {
   Action,
   Column,
 } from "../components/webComponent/TableComponent";
-import { useUserStore } from "@/store/userStore";
-import { usePaginationStore } from "@/store/paginationStore";
-import { User } from "@/typings/interfaces/user/user";
-import ToastManager from "toastify-react-native/components/ToastManager";
 import AddOrEditUser from "./addOrEditUser";
 
 export default function UserManagementScreen() {
@@ -24,22 +24,22 @@ export default function UserManagementScreen() {
   const deleteUser = useUserStore((state) => state.deleteUser);
   const { currentPage, pageSize } = usePaginationStore();
 
-  useEffect(() => {
-    const fetchUserList = async () => {
-      setLoading(true);
-      try {
-        await getList({
-          page: currentPage,
-          // Backend BaseRepository.get() reads `itemsPerPage` for page size.
-          itemsPerPage: pageSize,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchUserList = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      await getList({
+        page: currentPage,
+        // Backend BaseRepository.get() reads `itemsPerPage` for page size.
+        itemsPerPage: pageSize,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, getList, pageSize]);
 
+  useEffect(() => {
     fetchUserList();
-  }, [currentPage, pageSize, getList]);
+  }, [fetchUserList]);
 
   const columns: Column[] = [
     {
@@ -83,7 +83,11 @@ export default function UserManagementScreen() {
       render: (value) => {
         const status = Number(value);
         const label =
-          status === 1 ? "Hoạt động" : status === 2 ? "Bị từ chối" : "Chờ duyệt";
+          status === 1
+            ? "Hoạt động"
+            : status === 2
+              ? "Bị từ chối"
+              : "Chờ duyệt";
         const active = status === 1;
         return (
           <View
