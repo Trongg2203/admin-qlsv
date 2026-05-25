@@ -2,24 +2,29 @@ import { ThemeMode, themeTokens, useThemeStore } from "@/store/themeStore";
 import { scale } from "@/utils/responsive";
 import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const OPTIONS: { mode: ThemeMode; label: string; hint: string }[] = [
-  { mode: "dark", label: "Che do toi", hint: "Nen den, hien thi sang" },
-  { mode: "light", label: "Che do sang", hint: "Nen trang, de nhin" },
-  { mode: "system", label: "Theo he thong", hint: "Tu dong theo cai dat may" },
+  { mode: "dark", label: "Chế độ tối", hint: "Nền đen, hiển thị sáng" },
+  { mode: "light", label: "Chế độ sáng", hint: "Nền trắng, dễ nhìn" },
+  { mode: "system", label: "Theo hệ thống", hint: "Tự động theo cài đặt máy" },
 ];
 
 export default function AppSetting() {
   const { themeMode, resolvedTheme, setThemeMode } = useThemeStore();
   const tokens = themeTokens[resolvedTheme];
-  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(
+    () => createStyles(tokens, insets.top),
+    [tokens, insets.top],
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Cai dat giao dien</Text>
+        <Text style={styles.headerTitle}>Cài đặt giao diện</Text>
         <Text style={styles.headerSubTitle}>
-          Lua chon che do den hoac trang cho toan bo ung dung
+          Lựa chọn chế độ đen hoặc trắng cho toàn bộ ứng dụng
         </Text>
       </View>
 
@@ -48,12 +53,16 @@ export default function AppSetting() {
   );
 }
 
-const createStyles = (tokens: typeof themeTokens.dark) =>
+const createStyles = (
+  tokens: (typeof themeTokens)[keyof typeof themeTokens],
+  topInset: number,
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: tokens.background,
-      padding: scale(16),
+      paddingTop: Math.max(topInset, scale(16)),
+      paddingHorizontal: scale(16),
     },
     header: {
       marginBottom: scale(20),

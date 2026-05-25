@@ -296,20 +296,13 @@ export default function DailyScreen() {
               style={styles.dayGlow}
             />
           )}
-          <Text style={styles.dayLabel}>Ngày {item}</Text>
-          <View style={styles.dayProgressRing}>
-            <LinearGradient
-              colors={[accent, ACCENT_ORANGE]}
-              style={styles.progressOuter}
-            >
-              <View style={styles.progressInner}>
-                <Text style={styles.progressText}>
-                  {Math.round(progress * 100)}%
-                </Text>
-              </View>
-            </LinearGradient>
+          <View style={styles.dayCardHeader}>
+            <Text style={styles.dayLabel}>Ngày</Text>
+            <Text style={styles.dayNumber}>{item}</Text>
+            <Text style={styles.dayCalories}>
+              {Math.round(dayCalories)} kcal
+            </Text>
           </View>
-          <Text style={styles.dayCalories}>{Math.round(dayCalories)} kcal</Text>
         </LinearGradient>
       </TouchableOpacity>
     );
@@ -367,7 +360,11 @@ export default function DailyScreen() {
             />
           ) : (
             <View style={[styles.mealImage, styles.mealImagePlaceholder]}>
-              <Ionicons name="restaurant-outline" size={24} color={tokens.subtext} />
+              <Ionicons
+                name="restaurant-outline"
+                size={24}
+                color={tokens.subtext}
+              />
             </View>
           )}
           <View style={styles.mealInfo}>
@@ -521,9 +518,7 @@ export default function DailyScreen() {
                 </View>
                 {items.length === 0 ? (
                   <View style={styles.mealEmptyCard}>
-                    <Text style={styles.mealEmptyText}>
-                      Chưa có món.
-                    </Text>
+                    <Text style={styles.mealEmptyText}>Chưa có món.</Text>
                   </View>
                 ) : (
                   items.map(renderMealCard)
@@ -779,6 +774,18 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
       fontSize: 12,
       fontWeight: "600",
     },
+    dayCardHeader: {
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 8,
+    },
+    dayNumber: {
+      marginTop: 8,
+      fontSize: 32,
+      fontWeight: "800",
+      color: tokens.text,
+    },
     dayProgressRing: {
       marginTop: 12,
       alignItems: "center",
@@ -805,9 +812,10 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
       fontWeight: "700",
     },
     dayCalories: {
-      marginTop: 10,
+      marginTop: 8,
       color: tokens.subtext,
-      fontSize: 11,
+      fontSize: 12,
+      fontWeight: "600",
     },
     mealSection: {
       marginHorizontal: 20,

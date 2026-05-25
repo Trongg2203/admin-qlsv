@@ -25,9 +25,8 @@ import {
   View,
 } from "react-native";
 import { Toast } from "toastify-react-native";
-import ButtonComponent from "../components/ButtonComponent";
-import ErrorDialog from "../components/UI/ErrorDialog";
 import FormComponent from "../components/form/FormComponent";
+import ErrorDialog from "../components/UI/ErrorDialog";
 
 const { width } = Dimensions.get("window");
 
@@ -433,6 +432,18 @@ export default function SettingTarget() {
             end={{ x: 1, y: 1 }}
             style={styles.gradientHeader}
           >
+            <TouchableOpacity
+              onPress={() => {
+                if (typeof router.canGoBack === "function" && router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/(app)/ProfileScreen");
+                }
+              }}
+              style={styles.headerBackButton}
+            >
+              <Ionicons name="arrow-back" size={24} color="#FFF" />
+            </TouchableOpacity>
             <View style={styles.headerContent}>
               <View style={styles.headerIconWrapper}>
                 <Ionicons name="fitness" size={32} color="#FFF" />
@@ -975,6 +986,16 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
       width: 40,
       height: 40,
       justifyContent: "center",
+    },
+    headerBackButton: {
+      position: "absolute",
+      zIndex: 1,
+      left: scale(16),
+      top: scale(48),
+      width: scale(40),
+      height: scale(40),
+      justifyContent: "center",
+      alignItems: "center",
     },
     formHeaderText: {
       fontSize: scale(18),
