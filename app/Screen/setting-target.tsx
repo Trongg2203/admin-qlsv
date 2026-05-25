@@ -50,7 +50,7 @@ export default function SettingTarget() {
 
   const initialValue: CreateSettingTarget = {
     user_id: "",
-    goal_type: GOALTYPE.GAIN_WEIGHT,
+    goal_type: GOALTYPE.LOSE_WEIGHT,
     target_date: addDays(getCurrentDate(), 1),
     status: GOALSTATUS.ACTIVE,
     is_completed: STATUS_COMPLETED.INCOMPLETE,
@@ -104,6 +104,30 @@ export default function SettingTarget() {
         suffix: "kg",
         min: 1,
         max: 300,
+        validationRules: [
+          {
+            type: "custom",
+            message:
+              "Cân nặng ban đầu phải nhỏ hơn cân nặng mục tiêu khi bạn chọn tăng cân, hoặc lớn hơn khi chọn giảm cân.",
+            validator: (value, formValues) => {
+              const startWeight = Number(value);
+              const targetWeight = Number(formValues.target_weight);
+              const goalType = formValues.goal_type;
+
+              if (!startWeight || !targetWeight || !goalType) {
+                return true;
+              }
+
+              if (goalType === GOALTYPE.GAIN_WEIGHT) {
+                return startWeight <= targetWeight;
+              }
+              if (goalType === GOALTYPE.LOSE_WEIGHT) {
+                return startWeight >= targetWeight;
+              }
+              return true;
+            },
+          },
+        ],
       },
     },
     {
@@ -117,6 +141,30 @@ export default function SettingTarget() {
         suffix: "kg",
         min: 1,
         max: 300,
+        validationRules: [
+          {
+            type: "custom",
+            message:
+              "Cân nặng mục tiêu phải lớn hơn cân nặng ban đầu khi chọn tăng cân, hoặc nhỏ hơn khi chọn giảm cân.",
+            validator: (value, formValues) => {
+              const targetWeight = Number(value);
+              const startWeight = Number(formValues.start_weight);
+              const goalType = formValues.goal_type;
+
+              if (!startWeight || !targetWeight || !goalType) {
+                return true;
+              }
+
+              if (goalType === GOALTYPE.GAIN_WEIGHT) {
+                return targetWeight >= startWeight;
+              }
+              if (goalType === GOALTYPE.LOSE_WEIGHT) {
+                return targetWeight <= startWeight;
+              }
+              return true;
+            },
+          },
+        ],
       },
     },
     {
@@ -128,6 +176,20 @@ export default function SettingTarget() {
         required: true,
         mode: "date",
         format: DateFormat.DATE,
+        validationRules: [
+          {
+            type: "custom",
+            message: "Ngày bắt đầu không được chọn trong quá khứ.",
+            validator: (value, formValues) => {
+              if (!value) return true;
+              const startDate = new Date(value);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              startDate.setHours(0, 0, 0, 0);
+              return startDate >= today;
+            },
+          },
+        ],
       },
     },
     {
@@ -139,6 +201,25 @@ export default function SettingTarget() {
         required: true,
         mode: "date",
         format: DateFormat.DATE,
+        validationRules: [
+          {
+            type: "custom",
+            message:
+              "Ngày mục tiêu phải khác ngày bắt đầu và cách đúng 7 ngày.",
+            validator: (value, formValues) => {
+              if (!value || !formValues.start_date) return true;
+              const startDate = new Date(formValues.start_date);
+              const targetDate = new Date(value);
+              startDate.setHours(0, 0, 0, 0);
+              targetDate.setHours(0, 0, 0, 0);
+
+              const diff =
+                (targetDate.getTime() - startDate.getTime()) /
+                (1000 * 60 * 60 * 24);
+              return diff === 7;
+            },
+          },
+        ],
       },
     },
     {
@@ -434,7 +515,10 @@ export default function SettingTarget() {
           >
             <TouchableOpacity
               onPress={() => {
-                if (typeof router.canGoBack === "function" && router.canGoBack()) {
+                if (
+                  typeof router.canGoBack === "function" &&
+                  router.canGoBack()
+                ) {
                   router.back();
                 } else {
                   router.replace("/(app)/ProfileScreen");
