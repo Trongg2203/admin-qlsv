@@ -15,12 +15,17 @@
 // step instead of behaving like a normal "edit" screen reached from Profile.
 
 import { API } from "@/constants/constants";
+import { useAuthStore } from "@/store/authStore";
 import { useSettingTargetStore } from "@/store/settingTargetStore";
 import { useUserStore } from "@/store/userStore";
 import type { Href } from "expo-router";
 
 export async function resolveEntryRoute(): Promise<Href> {
   try {
+    if (useAuthStore.getState().is_admin) {
+      return "/ProductManagement";
+    }
+
     const profile = await useUserStore.getState().getUserProfile();
     if (!profile) {
       return { pathname: "/Screen/ProfileSetting", params: { onboarding: "1" } };

@@ -9,9 +9,10 @@ import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import { getCurrentDate, minusYear } from "@/utils/dateHelpers";
 import { resolveEntryRoute } from "@/utils/sessionFlow";
 import { scale } from "@/utils/responsive";
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ToastManager from "toastify-react-native/components/ToastManager";
 import FormComponent from "../components/form/FormComponent";
 import ErrorDialog from "../components/UI/ErrorDialog";
@@ -236,7 +237,15 @@ export default function ProfileSetting() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.75}
+        >
+          <Ionicons name="arrow-back" size={22} color={tokens.text} />
+        </TouchableOpacity>
         <Text style={styles.headerText}>Chỉnh sửa hồ sơ cá nhân</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <FormComponent
@@ -269,6 +278,20 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
       padding: scale(12),
       borderRadius: scale(8),
       margin: scale(16),
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: tokens.accentSoft,
+    },
+    headerSpacer: {
+      width: 40,
     },
     headerText: {
       color: tokens.text,

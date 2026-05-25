@@ -1,5 +1,6 @@
 // components/WebSidebarNavigation.tsx
 import { MenuItem, menuItems } from "@/typings/types/menu";
+import { useAuthStore } from "@/store/authStore";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -147,9 +148,18 @@ export default function WebSidebarNavigation({
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const isAdmin = useAuthStore((s) => s.is_admin);
   const [isExpanded, setIsExpanded] = useState(true);
   const widthAnim = useRef(new Animated.Value(EXPANDED_WIDTH)).current;
   const currentRouteName = state.routes[state.index]?.name ?? "";
+  const visibleMenuItems = isAdmin
+    ? menuItems
+    : menuItems.filter(
+        (item) =>
+          !["UserManagement", "ProductManagement", "Management"].includes(
+            item.name,
+          ),
+      );
 
   const toggleSidebar = () => {
     const nextExpanded = !isExpanded;
@@ -248,7 +258,7 @@ export default function WebSidebarNavigation({
       <View style={styles.divider} />
 
       <View style={styles.menuList}>
-        {menuItems.map((item: any) => (
+        {visibleMenuItems.map((item: any) => (
           <MenuItemComponent
             key={item.name}
             item={item}

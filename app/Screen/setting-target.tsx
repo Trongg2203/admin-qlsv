@@ -433,6 +433,13 @@ export default function SettingTarget() {
             end={{ x: 1, y: 1 }}
             style={styles.gradientHeader}
           >
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.headerBackButton}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="arrow-back" size={22} color="#FFF" />
+            </TouchableOpacity>
             <View style={styles.headerContent}>
               <View style={styles.headerIconWrapper}>
                 <Ionicons name="fitness" size={32} color="#FFF" />
@@ -742,11 +749,24 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
       flex: 1,
     },
     gradientHeader: {
+      position: "relative",
       paddingTop: scale(48),
       paddingBottom: scale(32),
       paddingHorizontal: scale(20),
       borderBottomLeftRadius: scale(24),
       borderBottomRightRadius: scale(24),
+    },
+    headerBackButton: {
+      position: "absolute",
+      top: scale(46),
+      left: scale(16),
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: "rgba(255,255,255,0.18)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 2,
     },
     headerContent: {
       alignItems: "center",

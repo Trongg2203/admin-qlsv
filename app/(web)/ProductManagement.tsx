@@ -1,7 +1,8 @@
 import { useProductStore } from "@/store/productStore";
+import { usePaginationStore } from "@/store/paginationStore";
 import { Product } from "@/typings/interfaces/product/product";
 import { resolveImageUrl } from "@/utils/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Image, View } from "react-native";
 import ToastManager from "toastify-react-native/components/ToastManager";
 import TableComponent, {
@@ -20,15 +21,36 @@ const MEAL_TYPE_LABEL: Record<number, string> = {
 export default function ProductManagementScreen() {
   const { products, categories, loading, fetchProducts, fetchCategories, deleteProduct } =
     useProductStore();
+  const { currentPage, pageSize, searchTerm, sortBy, sortOrder, resetPagination } =
+    usePaginationStore();
 
   const [showForm, setShowForm] = useState(false);
   const [isAdd, setIsAdd] = useState(true);
   const [selected, setSelected] = useState<Product | null>(null);
 
+  const productQuery = useMemo(
+    () => ({
+      page: currentPage,
+      itemsPerPage: pageSize,
+      search: searchTerm || undefined,
+      sortBy: sortBy || undefined,
+      sortDesc: sortOrder,
+    }),
+    [currentPage, pageSize, searchTerm, sortBy, sortOrder],
+  );
+
   useEffect(() => {
+    resetPagination();
     fetchCategories();
-    fetchProducts();
-  }, []);
+  }, [fetchCategories, resetPagination]);
+
+  useEffect(() => {
+    fetchProducts(productQuery);
+  }, [fetchProducts, productQuery]);
+
+  const handleRefresh = useCallback(async () => {
+    await fetchProducts(productQuery);
+  }, [fetchProducts, productQuery]);
 
   const columns: Column[] = [
     {
@@ -112,7 +134,7 @@ export default function ProductManagementScreen() {
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onRefresh={fetchProducts}
+        onRefresh={handleRefresh}
         tableWidth="100%"
         showDefaultActions={true}
         globalSearch={true}

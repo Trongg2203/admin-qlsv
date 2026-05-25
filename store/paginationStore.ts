@@ -43,7 +43,7 @@ export const usePaginationStore = create<PaginationState>((set) => ({
   setTotalItems: (total) => set({ totalItems: total }),
   setSearchTerm: (term) => set({ searchTerm: term, currentPage: 1 }),
   setSortBy: (sortBy) => set({ sortBy }),
-  setSortOrder: (order) => set({ sortOrder }),
+  setSortOrder: (sortOrder) => set({ sortOrder }),
   setPagination: (data) => set({ 
     currentPage: data.currentPage,
     totalPages: data.lastPage,
