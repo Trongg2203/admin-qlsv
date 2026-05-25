@@ -41,13 +41,6 @@ const MEAL_SECTIONS = [
   { id: 4, label: "Bữa phụ", icon: "cafe" }, // 4 = snack
 ];
 
-const FOOD_IMAGES = [
-  "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop",
-];
-
 const MONTHS = [
   "Thg 1",
   "Thg 2",
@@ -83,9 +76,6 @@ const toNumber = (value?: string | number | null) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
-
-const getRandomImage = (index: number) =>
-  FOOD_IMAGES[index % FOOD_IMAGES.length];
 
 export default function DailyScreen() {
   const { activeMealPlan, loading, fetchActiveMealPlan, generateMealPlan } =
@@ -370,12 +360,16 @@ export default function DailyScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.mealCard}>
-          <Image
-            source={{
-              uri: resolveImageUrl(item.food?.image_url) ?? getRandomImage(index),
-            }}
-            style={styles.mealImage}
-          />
+          {resolveImageUrl(item.food?.image_url) ? (
+            <Image
+              source={{ uri: resolveImageUrl(item.food?.image_url) }}
+              style={styles.mealImage}
+            />
+          ) : (
+            <View style={[styles.mealImage, styles.mealImagePlaceholder]}>
+              <Ionicons name="restaurant-outline" size={24} color={tokens.subtext} />
+            </View>
+          )}
           <View style={styles.mealInfo}>
             <Text style={styles.mealName}>{item.food?.name ?? "Món ăn"}</Text>
             <Text style={styles.mealMeta}>
@@ -870,6 +864,13 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
       width: 58,
       height: 58,
       borderRadius: 14,
+    },
+    mealImagePlaceholder: {
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: tokens.card,
+      borderWidth: 1,
+      borderColor: tokens.border,
     },
     mealInfo: {
       flex: 1,
