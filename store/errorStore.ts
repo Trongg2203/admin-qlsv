@@ -48,11 +48,24 @@ export const useErrorStore = create<ErrorState>((set) => ({
     let errorDetails: ErrorDetail[] = [];
     let errorCode = error?.code || null;
 
-    if (error?.message) {
+    // Laravel default validation shape: { message, errors: { field: [...] } }
+    // (used by RegisterRequest / UpdateProfileRequest).
+    if (error?.errors && typeof error.errors === "object") {
+      errorDetails = Object.keys(error.errors).map((field) => ({
+        field,
+        message: Array.isArray(error.errors[field])
+          ? error.errors[field].join(", ")
+          : error.errors[field],
+      }));
+      errorMessage =
+        typeof error.message === "string" && error.message
+          ? error.message
+          : "Vui lòng kiểm tra lại thông tin";
+    } else if (error?.message) {
       if (typeof error.message === "string") {
         errorMessage = error.message;
       } else if (typeof error.message === "object") {
-        // Xử lý validation errors: { "user_id": ["Vui lòng nhập..."] }
+        // BaseRequest shape: message IS the { field: [...] } map.
         errorDetails = Object.keys(error.message).map((field) => ({
           field,
           message: Array.isArray(error.message[field])
@@ -90,12 +103,16 @@ export const useErrorStore = create<ErrorState>((set) => ({
       message: error?.message || "Lỗi kết nối server",
     };
 
-    // Xử lý axios error
+    // Xử lý axios error — preserve Laravel's `errors` map so field-level
+    // validation messages survive the exception path (422 rejects the promise).
     if (error?.response?.data) {
-      errorObj = {
-        code: error.response.data.code || error.response.status,
-        message: error.response.data.message || error.response.data,
-      };
+      const data = error.response.data;
+      useErrorStore.getState().setError({
+        code: data.code || error.response.status,
+        message: data.message || data,
+        errors: data.errors,
+      });
+      return;
     } else if (error?.request) {
       errorObj = {
         code: 0,

@@ -18,11 +18,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonComponent from "../components/ButtonComponent";
 import LinkComponent from "../components/LinkComponent";
 import { useErrorStore } from "@/store/errorStore";
+import { resolveEntryRoute } from "@/utils/sessionFlow";
 
 export default function LoginScreen() {
-  const [email, setEmail] = React.useState("dang.minh.quan@gmail.com");
+  const [email, setEmail] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(true);
-  const [password, setPassword] = React.useState("Password@123");
+  const [password, setPassword] = React.useState("");
 
   // store
   const loading = useLoadingStore();
@@ -52,7 +53,8 @@ export default function LoginScreen() {
       if (!isSuccess) return; //  không chuyển trang
 
       clearForgotResponse();
-      router.replace("/(app)/DailyScreen");
+      // Route based on onboarding state (profile -> goal -> meal plan)
+      router.replace(await resolveEntryRoute());
     } finally {
       loading.setLoading(false);
     }

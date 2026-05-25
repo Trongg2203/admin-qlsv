@@ -9,8 +9,6 @@ import TableComponent, {
 import { useUserStore } from "@/store/userStore";
 import { usePaginationStore } from "@/store/paginationStore";
 import ToastManager from "toastify-react-native/components/ToastManager";
-import userService from "@/services/userService";
-import { API } from "@/constants/constants";
 import AddOrEditUser from "./addOrEditUser";
 
 interface User {
@@ -37,7 +35,8 @@ export default function UserManagementScreen() {
       try {
         await userStore.getList({
           page: currentPage,
-          per_page: pageSize,
+          // Backend BaseRepository.get() reads `itemsPerPage` for page size.
+          itemsPerPage: pageSize,
         });
       } finally {
         setLoading(false);
@@ -75,36 +74,44 @@ export default function UserManagementScreen() {
       isSearch: true,
       searchType: "select",
       searchOptions: [
-        { label: "Admin", value: "admin" },
-        { label: "User", value: "user" },
-        { label: "Manager", value: "manager" },
+        { label: "Admin", value: "1" },
+        { label: "User", value: "0" },
       ],
+      // Backend returns role as a number (0=user, 1=admin).
+      render: (value) => <Text>{Number(value) === 1 ? "Admin" : "User"}</Text>,
     },
     {
-      key: "status",
+      key: "account_status",
       title: "Trạng thái",
       width: 100,
-      render: (value) => (
-        <View
-          style={{
-            backgroundColor: value === "active" ? "#dcfce7" : "#fee2e2",
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 12,
-            alignSelf: "flex-start",
-          }}
-        >
-          <Text
+      // Backend account_status: 0=pending, 1=active, 2=rejected.
+      render: (value) => {
+        const status = Number(value);
+        const label =
+          status === 1 ? "Hoạt động" : status === 2 ? "Bị từ chối" : "Chờ duyệt";
+        const active = status === 1;
+        return (
+          <View
             style={{
-              color: value === "active" ? "#16a34a" : "#dc2626",
-              fontSize: 12,
-              fontWeight: "500",
+              backgroundColor: active ? "#dcfce7" : "#fee2e2",
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 12,
+              alignSelf: "flex-start",
             }}
           >
-            {value === "active" ? "Hoạt động" : "Khóa"}
-          </Text>
-        </View>
-      ),
+            <Text
+              style={{
+                color: active ? "#16a34a" : "#dc2626",
+                fontSize: 12,
+                fontWeight: "500",
+              }}
+            >
+              {label}
+            </Text>
+          </View>
+        );
+      },
     },
   ];
 
@@ -135,32 +142,27 @@ export default function UserManagementScreen() {
     setShowForm(true);
   };
 
-  const handleEdit = (user: User) => {
-    setIsAdd(false);
-    setShowForm(true);
+  const handleEdit = (_user: User) => {
+    notSupported();
   };
 
-  const handleDelete = async (user: User) => {
-    console.log("Delete user:", user);
-    let ids = [];
-    ids.push(user.id);
-    try {
-      const response = await userService.delete(API.USER.DELETE, ids);
-      if (response) {
-        ToastManager.success("Xóa người dùng thành công");
-      }
-    } catch (error) {
-      ToastManager.show({
-        type: "error",
-        text1: `Đã có lỗi xảy ra khi xóa người dùng ${user.name}`,
-      });
-    }
+  // The backend exposes no admin user create/update/delete routes — only the
+  // public POST /auth/register creates users. Surface that honestly.
+  const notSupported = () =>
+    ToastManager.show({
+      type: "info",
+      text1: "Chưa được hỗ trợ",
+      text2: "API hiện chỉ cho phép xem danh sách người dùng.",
+    });
+
+  const handleDelete = async (_user: User) => {
+    notSupported();
   };
 
   const handleRefresh = async () => {
     await userStore.getList({
       page: currentPage,
-      per_page: pageSize,
+      itemsPerPage: pageSize,
     });
   };
 
@@ -187,7 +189,9 @@ export default function UserManagementScreen() {
         actionDirection="horizontal"
       />
 
-      {showForm && <AddOrEditUser isAdd={isAdd} />}
+      {showForm && (
+        <AddOrEditUser isAdd={isAdd} onClose={() => setShowForm(false)} />
+      )}
     </View>
   );
 }

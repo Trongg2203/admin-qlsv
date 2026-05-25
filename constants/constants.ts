@@ -18,6 +18,10 @@ export const GOALSTATUS = {
   ANBANDONED: 3,
 };
 
+// NOTE: paths below are verified 1:1 against server-qlsv/routes/api.php.
+// Do not add routes the backend does not expose (e.g. forgot-password,
+// admin user create/update/delete) — the backend only creates users via
+// POST /auth/register.
 export const API = {
   AUTH: {
     LOGIN: "/api/auth/login",
@@ -29,21 +33,29 @@ export const API = {
   USER: {
     DETAIL: "/api/user/detail",
     PROFILE: "/api/user/profile",
-    FORGOT_PASSWORD: "/api/user/forgot-password",
-    LIST: "/api/user/list",
-    DELETE: "/api/user/delete",
+    LIST: "/api/user/get-list",
   },
-  USER_GOAL: {
-    CREATE: "/api/user-goal/create",
-    UPDATE: "/api/user-goal/update",
-    GET_BY_SELF: "/api/user-goal/get-by-self",
+  GOAL: {
+    BASE: "/api/goals",
+    ACTIVE: "/api/goals/active",
+  },
+  CALORIE: {
+    CALCULATE: "/api/calorie/calculate",
+    LATEST: "/api/calorie/latest",
+    HISTORY: "/api/calorie/history",
   },
   FOOD: {
     CATEGORIES: "/api/food-categories",
     FOODS: "/api/foods",
     BY_CATEGORY: "/api/foods/category",
   },
+  FOOD_RATING: {
+    RATE: "/api/food-ratings/rate",
+    MY: "/api/food-ratings/my",
+    BY_FOOD: "/api/food-ratings/food",
+  },
   MEAL_PLAN: {
+    BASE: "/api/meal-plans",
     GENERATE: "/api/meal-plans/generate",
     ACTIVE: "/api/meal-plans/active",
   },

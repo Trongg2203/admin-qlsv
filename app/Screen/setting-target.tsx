@@ -13,6 +13,7 @@ import { addDays, getCurrentDate } from "@/utils/dateHelpers";
 import { scale } from "@/utils/responsive";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -36,6 +37,9 @@ export default function SettingTarget() {
   const { resolvedTheme } = useThemeStore();
   const tokens = themeTokens[resolvedTheme];
   const styles = useMemo(() => createStyles(tokens), [tokens]);
+
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
+  const isOnboarding = onboarding === "1";
 
   const { hasError, clearError } = useErrorStore();
   const [showErrorDialog, setShowErrorDialog] = useState(false);
@@ -267,13 +271,19 @@ export default function SettingTarget() {
           "checkmark-circle-outline",
         );
 
-        setTimeout(() => {
-          handleCalorie();
-          setShowForm(false);
-          setGoalId(null);
-          setIsAdd(true);
-          fetchGoals();
-        }, 1000);
+        // Goal saved -> (re)calculate calories from profile + this goal.
+        await handleCalorie();
+
+        // During onboarding this is the last required step: enter the app.
+        if (isOnboarding && isAdd) {
+          router.replace("/(app)/DailyScreen");
+          return;
+        }
+
+        setShowForm(false);
+        setGoalId(null);
+        setIsAdd(true);
+        fetchGoals();
       }
     } catch (error) {
       console.log(error);
@@ -333,6 +343,17 @@ export default function SettingTarget() {
   useEffect(() => {
     fetchGoals();
   }, []);
+
+  // On the onboarding step there is no goal yet — open the create form directly.
+  useEffect(() => {
+    if (isOnboarding) {
+      setIsAdd(true);
+      setGoalId(null);
+      setFormData(initialValue);
+      setShowForm(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnboarding]);
 
   const handleCloseError = () => {
     clearError();

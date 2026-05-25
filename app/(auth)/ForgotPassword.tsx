@@ -20,41 +20,25 @@ import {
 } from "lucide-react-native";
 import React, { useState } from "react";
 import ButtonComponent from "../components/ButtonComponent";
-import { useLoadingStore } from "@/store/loadingStore";
-import { useUserStore } from "@/store/userStore";
-import { router } from "expo-router";
+import { POSITION_TOAST } from "@/typings/types/PostionToast";
+import ToastManager from "toastify-react-native/components/ToastManager";
 
 function ForgotPassword() {
-  const [email, setEmail] = React.useState("admin@gmail.com");
+  const [email, setEmail] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(true);
-  const [password, setPassword] = React.useState("123456");
+  const [password, setPassword] = React.useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = React.useState(true);
 
-  const loading = useLoadingStore();
-  const userStore = useUserStore();
-
-  async function handleForgotPassword() {
-    try {
-      loading.setLoading(true);
-
-      let data = {
-        email,
-        password,
-        new_password: newPassword,
-      };
-
-      const response = await userStore.forgotPassword(data);
-      if (response) {
-        console.log("Password reset successful");
-
-        router.replace("/(auth)/LoginScreen");
-      }
-    } catch (error) {
-      console.log(error);
-    }
-
-    loading.setLoading(false);
+  // The Laravel backend exposes no password-reset endpoint, so there is
+  // nothing to call here. Be honest with the user instead of failing silently.
+  function handleForgotPassword() {
+    ToastManager.show({
+      type: "info",
+      text1: "Tính năng đặt lại mật khẩu chưa được hỗ trợ",
+      text2: "Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+      position: POSITION_TOAST.TOP,
+    });
   }
 
   return (

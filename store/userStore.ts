@@ -34,16 +34,12 @@ export const useUserStore = create<UserState>()((set, get) => ({
 
   fetchUserDetail: async () => {
     try {
-      const response = await userService.getSingle<IUserDetail>(
+      const response = await userService.getSingleWithOutSlug<IUserDetail>(
         API.USER.DETAIL,
-        "",
       );
 
       if (response) {
-        console.log("User detail fetched successfully:", response);
         set({ userDetail: response });
-      } else {
-        console.log("No user detail data");
       }
     } catch (error) {
       console.log("Error fetching user detail:", error);
@@ -52,9 +48,8 @@ export const useUserStore = create<UserState>()((set, get) => ({
 
   getUserProfile: async () => {
     try {
-      const response = await userService.getSingle<IUserProfile>(
+      const response = await userService.getSingleWithOutSlug<IUserProfile>(
         API.USER.PROFILE,
-        "",
       );
       if (response) {
         set({ userProfile: response });
@@ -68,8 +63,11 @@ export const useUserStore = create<UserState>()((set, get) => ({
     }
   },
 
+  // The backend creates the profile during registration (POST /auth/register)
+  // and exposes only PUT /api/user/profile. There is no create-profile route,
+  // so "create" maps to the same update call against the existing profile.
   createUserProfile: async (data) => {
-    const response = await userService.post<Partial<IUserProfile>>(
+    const response = await userService.update<Partial<IUserProfile>>(
       API.USER.PROFILE,
       data,
     );
@@ -84,28 +82,12 @@ export const useUserStore = create<UserState>()((set, get) => ({
     return response;
   },
 
-  forgotPassword: async (data: any): Promise<boolean> => {
-    try {
-      const response = await userService.create<any, any>(
-        API.USER.FORGOT_PASSWORD,
-        data,
-      );
-
-      if (response) {
-        const email = response?.email || data.email;
-        set({
-          userForgotResponse: {
-            email,
-            password: data.new_password,
-          },
-        });
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.log("Error occurred while resetting password:", error);
-      return false;
-    }
+  // NOTE: the backend has no password-reset endpoint. This is intentionally a
+  // no-op so the UI can surface a clear "not supported" message instead of
+  // calling a route that does not exist. See ForgotPassword screen.
+  forgotPassword: async (_data: any): Promise<boolean> => {
+    console.warn("forgotPassword: backend has no password-reset endpoint.");
+    return false;
   },
 
   clearForgotResponse: () => {

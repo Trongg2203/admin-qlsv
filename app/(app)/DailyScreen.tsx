@@ -1,16 +1,22 @@
 import http from "@/api/http";
 import RatingModal from "@/app/Screen/RatingModal";
+import { API } from "@/constants/constants";
 import { Fonts } from "@/constants/theme";
 import { useMealPlanStore } from "@/store/mealPlanStore";
 import { themeTokens, useThemeStore } from "@/store/themeStore";
 import { MealPlanDetail } from "@/typings/interfaces/mealPlan/mealPlan";
-import { ApiResult } from "@/typings/interfaces/result/apiResult";
+import {
+  ApiResult,
+  ApiResultGeneric,
+} from "@/typings/interfaces/result/apiResult";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import { tabBarScrollY } from "@/utils/tabBarScroll";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -99,16 +105,42 @@ export default function DailyScreen() {
     resolvedTheme === "dark" ? ["#1F2F1F", "#0F0F12"] : ["#FFFFFF", "#F4FFF6"];
 
   const [selectedDay, setSelectedDay] = useState(1);
-  const [queueCount, setQueueCount] = useState(0);
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
   const [selectedFood, setSelectedFood] = useState<MealPlanDetail | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [calorieTargets, setCalorieTargets] = useState<{
+    protein: number;
+    carbs: number;
+    fat: number;
+  } | null>(null);
 
   const timelineAnim = useRef(new Animated.Value(1)).current;
-  const queueAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    fetchActiveMealPlan();
+    (async () => {
+      await fetchActiveMealPlan();
+      setHasLoaded(true);
+    })();
   }, [fetchActiveMealPlan]);
+
+  // Pull the real macro targets (grams) from the latest calorie calculation
+  // instead of approximating from calories with a fixed ratio.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await http.get<ApiResultGeneric<any>>(API.CALORIE.LATEST);
+        if (res?.code === 200 && res.data) {
+          setCalorieTargets({
+            protein: toNumber(res.data.protein_grams),
+            carbs: toNumber(res.data.carbs_grams),
+            fat: toNumber(res.data.fat_grams),
+          });
+        }
+      } catch (error) {
+        console.log("calorie latest fetch error:", error);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     Animated.timing(timelineAnim, {
@@ -144,6 +176,15 @@ export default function DailyScreen() {
   }, [dayDetails]);
 
   const macroTargets = useMemo(() => {
+    // Prefer the actual macro grams from the calorie calculation.
+    if (calorieTargets) {
+      return {
+        protein: Math.round(calorieTargets.protein),
+        carbs: Math.round(calorieTargets.carbs),
+        fat: Math.round(calorieTargets.fat),
+      };
+    }
+    // Fallback: approximate from daily calories (30% P / 40% C / 30% F).
     if (!targetCalories) {
       return { protein: 0, carbs: 0, fat: 0 };
     }
@@ -151,24 +192,20 @@ export default function DailyScreen() {
     const carbs = Math.round((targetCalories * 0.4) / 4);
     const fat = Math.round((targetCalories * 0.3) / 9);
     return { protein, carbs, fat };
-  }, [targetCalories]);
+  }, [targetCalories, calorieTargets]);
 
   const handleSelectDay = (day: number) => {
     timelineAnim.setValue(0.6);
     setSelectedDay(day);
   };
 
-  const handleAddToQueue = () => {
-    setQueueCount((prev) => prev + 1);
-    queueAnim.setValue(0.85);
-    Animated.spring(queueAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 5,
-    }).start();
-  };
-
   const handleGenerate = async () => {
+    ToastManager.show({
+      type: "info",
+      text1: "Đang tạo thực đơn bằng AI…",
+      text2: "Quá trình này có thể mất tới 60 giây.",
+      position: POSITION_TOAST.TOP,
+    });
     const response = await generateMealPlan({});
     if (!response) {
       ToastManager.show({
@@ -178,11 +215,25 @@ export default function DailyScreen() {
       });
       return;
     }
+    setSelectedDay(1);
     ToastManager.show({
       type: "success",
       text1: "Tạo thực đơn thành công",
       position: POSITION_TOAST.TOP,
     });
+  };
+
+  // Regenerating replaces the current active plan (old one is marked Replaced
+  // server-side), so confirm first.
+  const confirmRegenerate = () => {
+    Alert.alert(
+      "Tạo thực đơn mới?",
+      "Thực đơn hiện tại sẽ được thay thế bằng thực đơn 7 ngày mới do AI tạo.",
+      [
+        { text: "Hủy", style: "cancel" },
+        { text: "Tạo mới", style: "destructive", onPress: handleGenerate },
+      ],
+    );
   };
 
   const handleRatingSubmit = async (
@@ -340,6 +391,45 @@ export default function DailyScreen() {
     );
   };
 
+  if (!hasLoaded) {
+    return (
+      <View style={styles.stateContainer}>
+        <ActivityIndicator size="large" color={accent} />
+        <Text style={styles.stateText}>Đang tải thực đơn…</Text>
+      </View>
+    );
+  }
+
+  if (!activeMealPlan) {
+    return (
+      <View style={styles.stateContainer}>
+        <View style={styles.emptyIconWrap}>
+          <Ionicons name="restaurant-outline" size={48} color={accent} />
+        </View>
+        <Text style={styles.emptyTitle}>Chưa có thực đơn</Text>
+        <Text style={styles.emptyDesc}>
+          Hãy để AI tạo thực đơn 7 ngày phù hợp với mục tiêu và lượng calo của
+          bạn.
+        </Text>
+        <TouchableOpacity
+          style={[styles.emptyGenerateBtn, loading && { opacity: 0.6 }]}
+          onPress={handleGenerate}
+          disabled={loading}
+          activeOpacity={0.85}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={tokens.background} />
+          ) : (
+            <Ionicons name="sparkles" size={18} color={tokens.background} />
+          )}
+          <Text style={styles.emptyGenerateText}>
+            {loading ? "Đang tạo… (tối đa 60 giây)" : "AI tạo thực đơn"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -356,27 +446,25 @@ export default function DailyScreen() {
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.headerTitle}>
-                  {activeMealPlan?.plan_name ?? "Thực đơn 7 ngày — Bulking"}
+                  {activeMealPlan?.plan_name ?? "Thực đơn 7 ngày"}
                 </Text>
-                <Text style={styles.headerSubtitle}>
-                  {dateRange || "27 Thg 4 - 03 Thg 5"}
-                </Text>
+                <Text style={styles.headerSubtitle}>{dateRange}</Text>
               </View>
             </View>
             <View style={styles.headerMetaRow}>
               <View style={styles.kcalBadge}>
                 <Ionicons name="flash" size={14} color={accent} />
                 <Text style={styles.kcalText}>
-                  {targetCalories ? Math.round(targetCalories) : 3287} kcal/ngày
+                  {Math.round(targetCalories)} kcal/ngày
                 </Text>
               </View>
               <TouchableOpacity
                 style={styles.generateButton}
-                onPress={handleGenerate}
+                onPress={confirmRegenerate}
                 disabled={loading}
               >
                 <Text style={styles.generateText}>
-                  {loading ? "Đang tạo..." : "AI tạo thực đơn"}
+                  {loading ? "Đang tạo..." : "Tạo thực đơn mới"}
                 </Text>
                 <Ionicons name="sparkles" size={16} color={tokens.background} />
               </TouchableOpacity>
@@ -527,6 +615,52 @@ const createStyles = (tokens: typeof themeTokens.dark) =>
     container: {
       flex: 1,
       backgroundColor: tokens.background,
+    },
+    stateContainer: {
+      flex: 1,
+      backgroundColor: tokens.background,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 32,
+      gap: 14,
+    },
+    stateText: {
+      color: tokens.subtext,
+      fontSize: 14,
+    },
+    emptyIconWrap: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: tokens.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    emptyTitle: {
+      color: tokens.text,
+      fontSize: 18,
+      fontWeight: "700",
+    },
+    emptyDesc: {
+      color: tokens.subtext,
+      fontSize: 13,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    emptyGenerateBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      borderRadius: 999,
+      backgroundColor: tokens.accent,
+      marginTop: 8,
+    },
+    emptyGenerateText: {
+      color: tokens.background,
+      fontWeight: "700",
+      fontSize: 14,
     },
     scrollContent: {
       paddingBottom: 160,

@@ -1,30 +1,25 @@
-import { Stack } from "expo-router";
-
 import { useAuthStore } from "@/store/authStore";
-import { Redirect } from "expo-router";
-import { useUserStore } from "@/store/userStore";
+import { resolveEntryRoute } from "@/utils/sessionFlow";
+import { Stack, router } from "expo-router";
 import { useEffect } from "react";
 
 export default function AuthLayout() {
   const { isLoggedIn } = useAuthStore();
-  const { getUserProfile } = useUserStore();
 
+  // If an already-authenticated user lands back on the auth stack (e.g. a
+  // restored route), send them onward via the onboarding resolver instead of
+  // hard-redirecting to DailyScreen (which used to bypass profile/goal setup).
   useEffect(() => {
     if (isLoggedIn) {
-      // Gọi API khi đã logged in
-      getUserProfile();
+      resolveEntryRoute().then((route) => router.replace(route));
     }
   }, [isLoggedIn]);
 
-  if (isLoggedIn) {
-    // getUserProfile();
-    return <Redirect href="/(app)/DailyScreen" />;
-  }
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="LoginScreen" />
       <Stack.Screen name="register" />
-      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="ForgotPassword" />
     </Stack>
   );
 }

@@ -8,7 +8,7 @@ import { genderType, getActivityLabel } from "@/utils/formalHelpers";
 import { formatHeight, formatWeight, shortName } from "@/utils/helpers";
 import { tabBarScrollY } from "@/utils/tabBarScroll";
 import { LogOut, Settings } from "lucide-react-native";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Animated, Image, StyleSheet, Text, View } from "react-native";
 import ButtonComponent from "../components/ButtonComponent";
 import ChipComponent from "../components/ChipComponent";
@@ -27,6 +27,13 @@ export default function ProfileScreen() {
   const tokens = themeTokens[resolvedTheme];
 
   const styles = useMemo(() => createStyles(tokens), [tokens]);
+
+  // Refresh profile whenever the tab mounts (app resume via splash doesn't
+  // fetch it otherwise, leaving the screen with placeholder data).
+  useEffect(() => {
+    useUserStore.getState().getUserProfile();
+    useUserStore.getState().fetchUserDetail();
+  }, []);
 
   async function onLogOut() {
     try {

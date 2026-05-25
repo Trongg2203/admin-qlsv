@@ -7,7 +7,9 @@ import { DateFormat } from "@/typings/types/DateType";
 import { MasterComponentItem } from "@/typings/types/form.types";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import { getCurrentDate, minusYear } from "@/utils/dateHelpers";
+import { resolveEntryRoute } from "@/utils/sessionFlow";
 import { scale } from "@/utils/responsive";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import ToastManager from "toastify-react-native/components/ToastManager";
@@ -40,6 +42,9 @@ export default function ProfileSetting() {
   const { hasError, clearError } = useErrorStore();
   const { userProfile, getUserProfile, createUserProfile, updateUserProfile } =
     useUserStore();
+
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
+  const isOnboarding = onboarding === "1";
 
   const [formData, setFormData] = useState<ProfileFormValues>(initialValue);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
@@ -185,6 +190,11 @@ export default function ProfileSetting() {
         });
         const latestProfile = await getUserProfile();
         setHasProfile(!!latestProfile);
+
+        // During onboarding, advance to the next required step (goal setup).
+        if (isOnboarding) {
+          router.replace(await resolveEntryRoute());
+        }
       }
     } catch (error) {
       console.log(error);

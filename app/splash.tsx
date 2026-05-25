@@ -5,6 +5,7 @@ import {
   AUTH_TOKEN_REMEMBER,
 } from "@/constants/constants";
 import { useAuthStore } from "@/store/authStore";
+import { resolveEntryRoute } from "@/utils/sessionFlow";
 import AsyncStorage from "@/utils/webStorage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -87,8 +88,8 @@ export default function SplashScreen() {
         // Gọi API để verify token
         await http.get<any>(API.AUTH.ME);
 
-        // Nếu thành công, navigate đến app
-        router.replace("/(app)/DailyScreen");
+        // Token hợp lệ — điều hướng theo trạng thái onboarding (profile/goal)
+        router.replace(await resolveEntryRoute());
       } catch (error: any) {
         // Token hết hạn hoặc không hợp lệ
         console.log("Token verification failed:", error);
