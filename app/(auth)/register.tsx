@@ -135,7 +135,7 @@ export default function RegisterScreen() {
         label: "Chiều cao",
         required: true,
         decimalPlaces: 0,
-        prefix: "cm",
+        suffix: "cm",
         min: 100,
         max: 250,
         validationRules: [
@@ -152,7 +152,7 @@ export default function RegisterScreen() {
         label: "Cân nặng",
         required: true,
         decimalPlaces: 2,
-        prefix: "kg",
+        suffix: "kg",
         min: 30,
         max: 300,
         validationRules: [

@@ -10,6 +10,7 @@ import {
   ApiResultGeneric,
 } from "@/typings/interfaces/result/apiResult";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
+import { resolveImageUrl } from "@/utils/image";
 import { tabBarScrollY } from "@/utils/tabBarScroll";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -371,7 +372,7 @@ export default function DailyScreen() {
         <View style={styles.mealCard}>
           <Image
             source={{
-              uri: item.food?.image_url ?? getRandomImage(index),
+              uri: resolveImageUrl(item.food?.image_url) ?? getRandomImage(index),
             }}
             style={styles.mealImage}
           />
@@ -603,7 +604,7 @@ export default function DailyScreen() {
         onClose={handleCloseRatingModal}
         foodId={selectedFood?.food?.id ?? ""}
         foodName={selectedFood?.food?.name ?? ""}
-        foodImage={selectedFood?.food?.image_url}
+        foodImage={resolveImageUrl(selectedFood?.food?.image_url)}
         onSubmit={handleRatingSubmit}
       />
     </View>

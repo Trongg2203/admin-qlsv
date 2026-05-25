@@ -101,7 +101,7 @@ export default function ProfileSetting() {
         info: {
           label: "Chiều cao",
           decimalPlaces: 0,
-          prefix: "cm",
+          suffix: "cm",
           min: 100,
           max: 250,
         },
@@ -113,7 +113,7 @@ export default function ProfileSetting() {
         info: {
           label: "Cân nặng hiện tại",
           decimalPlaces: 2,
-          prefix: "kg",
+          suffix: "kg",
           min: 30,
           max: 300,
         },

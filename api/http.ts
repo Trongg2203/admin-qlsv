@@ -224,6 +224,15 @@ class Http {
     return response.data;
   }
 
+  // POST a pre-built FormData (multipart). Use this for file/array uploads
+  // where postWithFile's key/value flattening is insufficient (e.g. images[]).
+  public async postForm<T>(url: string, formData: FormData): Promise<T> {
+    const response = await this.instance.post<T>(url, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
   // PUT request
   public async put<T>(url: string, data: any): Promise<T> {
     const response = await this.instance.put<T>(url, data);

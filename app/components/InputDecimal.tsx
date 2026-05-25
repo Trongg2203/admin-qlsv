@@ -1,5 +1,6 @@
 // components/InputDecimalComponent.tsx
 import { themeTokens, useThemeStore } from "@/store/themeStore";
+import { formatDecimalDisplay } from "@/utils/number";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -46,27 +47,12 @@ const InputDecimalComponent: React.FC<InputDecimalComponentProps> = ({
   const label = info.label;
   const accessibilityLabel = info.accessibilityLabel || label || "Input";
 
-  // Format số hiển thị
+  // Format số hiển thị (delegates to the pure, tested formatter).
   function formatDisplayValue(val: any): string {
-    if (val === undefined || val === null || val === "") return "";
-
-    const num = typeof val === "string" ? parseFloat(val) : val;
-    if (isNaN(num)) return "";
-
-    const decimalPlaces = info.decimalPlaces ?? 2;
-    let formatted = num.toFixed(decimalPlaces);
-
-    // Loại bỏ số 0 vô nghĩa ở cuối
-    formatted = formatted.replace(/\.?0+$/, "");
-
-    // Thêm phân cách hàng nghìn nếu cần
-    if (info.thousandSeparator && formatted !== "") {
-      const parts = formatted.split(".");
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      formatted = parts.join(".");
-    }
-
-    return formatted;
+    return formatDecimalDisplay(val, {
+      decimalPlaces: info.decimalPlaces ?? 2,
+      thousandSeparator: info.thousandSeparator,
+    });
   }
 
   // Parse từ string sang number

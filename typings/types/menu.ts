@@ -15,6 +15,7 @@ import {
   FileText,
   Users,
   BarChart,
+  Utensils,
 } from "lucide-react-native";
 
 export const menuItems: MenuItem[] = [
@@ -35,6 +36,12 @@ export const menuItems: MenuItem[] = [
     label: "Quản lý người dùng",
     icon: Users,
     route: "/UserManagement",
+  },
+  {
+    name: "ProductManagement",
+    label: "Quản lý món ăn",
+    icon: Utensils,
+    route: "/ProductManagement",
   },
   {
     name: "Management",
