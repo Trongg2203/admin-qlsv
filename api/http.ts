@@ -4,16 +4,14 @@ import {
   AUTH_TOKEN_REMEMBER,
 } from "@/constants/constants";
 import { LoggedIn } from "@/typings/interfaces/auth/login";
-import {
-  ApiResult,
-  ApiResultGeneric,
-} from "@/typings/interfaces/result/apiResult";
+import { ApiResultGeneric } from "@/typings/interfaces/result/apiResult";
 import { POSITION_TOAST } from "@/typings/types/PostionToast";
 // ❌ Xóa dòng import này
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Platform } from "react-native";
 
+import { useAuthStore } from "@/store/authStore";
 import axios, {
   AxiosInstance,
   AxiosResponse,
@@ -185,6 +183,16 @@ class Http {
 
   private async logout() {
     try {
+      // Reset auth store state so auth stack does not auto-redirect back
+      // into the app while the user is already being forced to login.
+      useAuthStore.setState({
+        token: null,
+        isLoggedIn: false,
+        user: null,
+        user_type: 0,
+        is_admin: false,
+      });
+
       await AsyncStorage.removeItem(AUTH_TOKEN_NAME);
       await AsyncStorage.removeItem(AUTH_TOKEN_REMEMBER);
       router.replace("/(auth)/LoginScreen");
