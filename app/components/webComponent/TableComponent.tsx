@@ -117,6 +117,7 @@ export default function TableComponent({
   storeKey = "default",
   onPaginationChange,
 }: TableComponentProps) {
+  const tableDimension = tableWidth as any;
   // Sử dụng store
   const {
     currentPage: storeCurrentPage,
@@ -128,13 +129,9 @@ export default function TableComponent({
     sortOrder: storeSortOrder,
     setCurrentPage,
     setPageSize,
-    setTotalPages,
-    setTotalItems,
     setSearchTerm,
     setSortBy,
     setSortOrder,
-    setPagination,
-    resetPagination,
   } = usePaginationStore();
 
   // State local (chỉ dùng khi useStorePagination = false)
@@ -206,25 +203,6 @@ export default function TableComponent({
       }
     },
     [useStorePagination, setSortBy, setSortOrder],
-  );
-
-  const handleSetPagination = useCallback(
-    (data: {
-      currentPage: number;
-      lastPage: number;
-      perPage: number;
-      total: number;
-    }) => {
-      if (useStorePagination) {
-        setPagination(data);
-      } else {
-        setLocalCurrentPage(data.currentPage);
-        setLocalTotalPages(data.lastPage);
-        setLocalPageSize(data.perPage);
-        setLocalTotalItems(data.total);
-      }
-    },
-    [useStorePagination, setPagination],
   );
 
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>(
@@ -376,7 +354,7 @@ export default function TableComponent({
         setLocalTotalItems(sortedData.length);
       }
     }
-  }, [sortedData, pageSize, pagination, useStorePagination]);
+  }, [sortedData, pageSize, pagination, useStorePagination, totalPages, totalItems]);
 
   const paginatedData = pagination
     ? useStorePagination
@@ -406,7 +384,7 @@ export default function TableComponent({
     if (currentPage !== 1) {
       handleSetCurrentPage(1);
     }
-  }, [searchTerm, columnFilters, pageSize]);
+  }, [searchTerm, columnFilters, pageSize, currentPage, handleSetCurrentPage]);
 
   const handleSort = (column: Column) => {
     if (!column.sortable) return;
@@ -809,6 +787,30 @@ export default function TableComponent({
 
   const renderRow = (item: any, index: number) => {
     const actionButtons = renderActionButtons(item);
+    const renderCellContent = (column: Column) => {
+      const content = column.render
+        ? column.render(item[column.key], item, index)
+        : item[column.key];
+
+      if (
+        typeof content === "string" ||
+        typeof content === "number" ||
+        typeof content === "boolean"
+      ) {
+        return (
+          <Text style={styles.cellText} numberOfLines={2}>
+            {String(content)}
+          </Text>
+        );
+      }
+
+      if (content == null) {
+        return <Text style={styles.cellText}>-</Text>;
+      }
+
+      return content;
+    };
+
     return (
       <View
         key={item.id || index}
@@ -847,13 +849,7 @@ export default function TableComponent({
             key={column.key}
             style={[styles.cell, getColumnWidthStyle(column.key)]}
           >
-            {column.render ? (
-              column.render(item[column.key], item, index)
-            ) : (
-              <Text style={styles.cellText} numberOfLines={2}>
-                {item[column.key]}
-              </Text>
-            )}
+            {renderCellContent(column)}
           </View>
         ))}
 
@@ -1012,7 +1008,10 @@ export default function TableComponent({
         horizontal
         showsHorizontalScrollIndicator={isWeb}
         style={styles.tableScrollView}
-        contentContainerStyle={styles.tableContentContainer}
+        contentContainerStyle={[
+          styles.tableContentContainer,
+          { minWidth: tableDimension },
+        ]}
         refreshControl={
           onRefresh ? (
             <RefreshControl
@@ -1022,7 +1021,7 @@ export default function TableComponent({
           ) : undefined
         }
       >
-        <View style={[styles.tableContainer, { width: tableWidth }]}>
+        <View style={[styles.tableContainer, { width: tableDimension }]}>
           {renderColumnHeaders()}
           {loading ? (
             <View style={styles.loadingContainer}>

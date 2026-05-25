@@ -24,6 +24,12 @@ interface UserState {
   clearForgotResponse: () => void;
   UsersList: User[];
   getList: (query?: Record<string, string | number | null>) => Promise<void>;
+  createUser: (data: Partial<User> & { password?: string }) => Promise<boolean>;
+  updateUser: (
+    id: string,
+    data: Partial<User> & { password?: string },
+  ) => Promise<boolean>;
+  deleteUser: (id: string) => Promise<boolean>;
 }
 
 export const useUserStore = create<UserState>()((set, get) => ({
@@ -102,5 +108,33 @@ export const useUserStore = create<UserState>()((set, get) => ({
     if (response) {
       set({ UsersList: response.data });
     }
+  },
+
+  createUser: async (data) => {
+    const created = await userService.create<typeof data, User>(
+      API.USER.BASE,
+      data,
+    );
+    if (created) {
+      await get().getList();
+      return true;
+    }
+    return false;
+  },
+
+  updateUser: async (id, data) => {
+    const ok = await userService.update(`${API.USER.BASE}/${id}`, data);
+    if (ok) {
+      await get().getList();
+    }
+    return ok;
+  },
+
+  deleteUser: async (id) => {
+    const ok = await userService.delete(API.USER.BASE, [id]);
+    if (ok) {
+      await get().getList();
+    }
+    return ok;
   },
 }));

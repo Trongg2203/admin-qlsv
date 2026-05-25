@@ -31,6 +31,7 @@ export const API = {
     ME: "/api/auth/me",
   },
   USER: {
+    BASE: "/api/user",
     DETAIL: "/api/user/detail",
     PROFILE: "/api/user/profile",
     LIST: "/api/user/get-list",

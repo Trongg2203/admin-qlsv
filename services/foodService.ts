@@ -4,6 +4,7 @@ import {
   ApiResult,
   ApiResultGeneric,
 } from "@/typings/interfaces/result/apiResult";
+import { PaginatedResult } from "@/typings/interfaces/paging";
 import {
   Product,
   ProductCategory,
@@ -26,9 +27,26 @@ class FoodService extends BaseService {
   async getFoods(filters?: {
     meal_type?: number;
     category_id?: string;
+    page?: number;
+    itemsPerPage?: number;
+    search?: string;
+    sortBy?: string;
+    sortDesc?: "asc" | "desc";
   }): Promise<Product[]> {
     const body = await http.get<ListEnvelope<Product>>(API.FOOD.FOODS, filters);
     return unwrapList<Product>(body);
+  }
+
+  async getFoodsPage(filters?: {
+    meal_type?: number;
+    category_id?: string;
+    page?: number;
+    itemsPerPage?: number;
+    search?: string;
+    sortBy?: string;
+    sortDesc?: "asc" | "desc";
+  }): Promise<PaginatedResult<Product>> {
+    return this.getListWithPagination<Product>(API.FOOD.FOODS, filters);
   }
 
   async getCategories(): Promise<ProductCategory[]> {

@@ -8,32 +8,27 @@ import TableComponent, {
 } from "../components/webComponent/TableComponent";
 import { useUserStore } from "@/store/userStore";
 import { usePaginationStore } from "@/store/paginationStore";
+import { User } from "@/typings/interfaces/user/user";
 import ToastManager from "toastify-react-native/components/ToastManager";
 import AddOrEditUser from "./addOrEditUser";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  createdAt: string;
-}
 
 export default function UserManagementScreen() {
   const [loading, setLoading] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [isAdd, setIsAdd] = useState(true);
+  const [selected, setSelected] = useState<User | null>(null);
 
-  const userStore = useUserStore();
+  const usersList = useUserStore((state) => state.UsersList);
+  const getList = useUserStore((state) => state.getList);
+  const deleteUser = useUserStore((state) => state.deleteUser);
   const { currentPage, pageSize } = usePaginationStore();
 
   useEffect(() => {
     const fetchUserList = async () => {
       setLoading(true);
       try {
-        await userStore.getList({
+        await getList({
           page: currentPage,
           // Backend BaseRepository.get() reads `itemsPerPage` for page size.
           itemsPerPage: pageSize,
@@ -44,7 +39,7 @@ export default function UserManagementScreen() {
     };
 
     fetchUserList();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, getList]);
 
   const columns: Column[] = [
     {
@@ -133,34 +128,41 @@ export default function UserManagementScreen() {
       onPress: (user) => {
         console.log("Export user:", user);
       },
-      show: (user) => user.role === "admin",
+      show: (user) => Number(user.role) === 1,
     },
   ];
 
   const handleAdd = () => {
     setIsAdd(true);
+    setSelected(null);
     setShowForm(true);
   };
 
-  const handleEdit = (_user: User) => {
-    notSupported();
+  const handleEdit = (user: User) => {
+    setIsAdd(false);
+    setSelected(user);
+    setShowForm(true);
   };
 
-  // The backend exposes no admin user create/update/delete routes — only the
-  // public POST /auth/register creates users. Surface that honestly.
-  const notSupported = () =>
-    ToastManager.show({
-      type: "info",
-      text1: "Chưa được hỗ trợ",
-      text2: "API hiện chỉ cho phép xem danh sách người dùng.",
-    });
-
-  const handleDelete = async (_user: User) => {
-    notSupported();
+  const handleDelete = async (user: User) => {
+    Alert.alert("Xác nhận xoá", `Xoá người dùng "${user.name}"?`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xoá",
+        style: "destructive",
+        onPress: async () => {
+          const ok = await deleteUser(user.id);
+          ToastManager.show({
+            type: ok ? "success" : "error",
+            text1: ok ? "Đã xoá người dùng" : "Xoá người dùng thất bại",
+          });
+        },
+      },
+    ]);
   };
 
   const handleRefresh = async () => {
-    await userStore.getList({
+    await getList({
       page: currentPage,
       itemsPerPage: pageSize,
     });
@@ -169,7 +171,7 @@ export default function UserManagementScreen() {
   return (
     <View style={{ flex: 1, padding: 20, backgroundColor: "#f3f4f6" }}>
       <TableComponent
-        data={userStore.UsersList}
+        data={usersList}
         columns={columns}
         title="Quản lý người dùng"
         loading={loading}
@@ -190,7 +192,12 @@ export default function UserManagementScreen() {
       />
 
       {showForm && (
-        <AddOrEditUser isAdd={isAdd} onClose={() => setShowForm(false)} />
+        <AddOrEditUser
+          isAdd={isAdd}
+          user={selected}
+          onClose={() => setShowForm(false)}
+          onSaved={() => setShowForm(false)}
+        />
       )}
     </View>
   );

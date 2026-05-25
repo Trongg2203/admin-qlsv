@@ -277,7 +277,7 @@ export default function AddOrEditProduct({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={{ maxHeight: 640 }}>
+        <ScrollView style={{ maxHeight: 640 }} showsVerticalScrollIndicator>
           <FormComponent
             fields={fields}
             initialValues={initialValues}

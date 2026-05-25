@@ -1,16 +1,35 @@
+import { useUserStore } from "@/store/userStore";
+import { User } from "@/typings/interfaces/user/user";
 import { MasterComponentItem } from "@/typings/types/form.types";
 import { X } from "lucide-react-native";
-import { Text, TouchableOpacity, View } from "react-native";
+import { useMemo } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ToastManager from "toastify-react-native/components/ToastManager";
 import FormComponent from "../components/form/FormComponent";
 
 export interface AddOrEditUserProps {
   isAdd: boolean;
   onClose?: () => void;
-  models?: any;
+  user?: User | null;
+  onSaved?: () => void;
 }
 
-function AddOrEditUser({ isAdd, onClose }: AddOrEditUserProps) {
+function AddOrEditUser({ isAdd, onClose, user, onSaved }: AddOrEditUserProps) {
+  const { createUser, updateUser } = useUserStore();
+
+  const initialValues = useMemo(
+    () => ({
+      name: user?.name ?? "",
+      email: user?.email ?? "",
+      phone: user?.phone ?? "",
+      role: user?.role ?? 0,
+      account_status: user?.account_status ?? 1,
+      password: "",
+      confirm_password: "",
+    }),
+    [user],
+  );
+
   const fields: MasterComponentItem[] = [
     {
       type: "InputComponent",
@@ -32,7 +51,7 @@ function AddOrEditUser({ isAdd, onClose }: AddOrEditUserProps) {
       type: "PasswordComponent",
       column: 6,
       model: "password",
-      info: { label: "Mật khẩu", required: true },
+      info: { label: "Mật khẩu", required: isAdd },
     },
     {
       type: "PasswordComponent",
@@ -40,7 +59,7 @@ function AddOrEditUser({ isAdd, onClose }: AddOrEditUserProps) {
       model: "confirm_password",
       info: {
         label: "Xác nhận mật khẩu",
-        required: true,
+        required: isAdd,
         validationRules: [
           {
             type: "same",
@@ -50,19 +69,73 @@ function AddOrEditUser({ isAdd, onClose }: AddOrEditUserProps) {
         ],
       },
     },
+    {
+      type: "InputComponent",
+      column: 6,
+      model: "phone",
+      info: { label: "Số điện thoại" },
+    },
+    {
+      type: "CheckBoxComponent",
+      column: 6,
+      model: "role",
+      info: {
+        label: "Vai trò",
+        direction: "row",
+        returnType: "single",
+        options: [
+          { label: "User", value: 0 },
+          { label: "Admin", value: 1 },
+        ],
+      },
+    },
+    {
+      type: "CheckBoxComponent",
+      column: 6,
+      model: "account_status",
+      info: {
+        label: "Trạng thái",
+        direction: "row",
+        returnType: "single",
+        options: [
+          { label: "Chờ duyệt", value: 0 },
+          { label: "Hoạt động", value: 1 },
+          { label: "Bị từ chối", value: 2 },
+        ],
+      },
+    },
   ];
 
-  // The backend has no admin user create/update endpoint — users are created
-  // only via public registration (POST /auth/register). Be explicit instead of
-  // silently posting to a route that does not exist.
-  const handleSubmit = () => {
+  const handleSubmit = async (values: any) => {
+    const payload: any = {
+      name: values.name,
+      email: values.email,
+      phone: values.phone || null,
+      role: Number(values.role ?? 0),
+      account_status: Number(values.account_status ?? 1),
+    };
+
+    if (values.password) {
+      payload.password = values.password;
+    }
+
+    const ok = isAdd
+      ? await createUser(payload)
+      : await updateUser(user?.id as string, payload);
+
     ToastManager.show({
-      type: "info",
-      text1: "Chưa được hỗ trợ",
-      text2:
-        "API chưa có route tạo/sửa người dùng cho admin. Hãy dùng màn hình Đăng ký.",
+      type: ok ? "success" : "error",
+      text1: ok
+        ? isAdd
+          ? "Đã thêm người dùng"
+          : "Đã cập nhật người dùng"
+        : "Lưu người dùng thất bại",
     });
-    onClose?.();
+
+    if (ok) {
+      onSaved?.();
+      onClose?.();
+    }
   };
 
   return (
@@ -83,9 +156,10 @@ function AddOrEditUser({ isAdd, onClose }: AddOrEditUserProps) {
         style={{
           width: 800,
           maxWidth: "95%",
+          maxHeight: "92%",
           backgroundColor: "#fff",
-          padding: 20,
           borderRadius: 12,
+          overflow: "hidden",
         }}
       >
         <View
@@ -93,7 +167,9 @@ function AddOrEditUser({ isAdd, onClose }: AddOrEditUserProps) {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 10,
+            padding: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: "#e5e7eb",
           }}
         >
           <Text style={{ fontSize: 20, fontWeight: "bold" }}>
@@ -104,15 +180,14 @@ function AddOrEditUser({ isAdd, onClose }: AddOrEditUserProps) {
           </TouchableOpacity>
         </View>
 
-        <Text style={{ color: "#dc2626", fontSize: 12, marginBottom: 8 }}>
-          Lưu ý: API hiện chỉ hỗ trợ tạo tài khoản qua đăng ký công khai.
-        </Text>
-
-        <FormComponent
-          fields={fields}
-          onSubmit={handleSubmit}
-          onCancel={onClose}
-        />
+        <ScrollView style={{ maxHeight: 640 }}>
+          <FormComponent
+            fields={fields}
+            initialValues={initialValues}
+            onSubmit={handleSubmit}
+            onCancel={onClose}
+          />
+        </ScrollView>
       </View>
     </View>
   );
