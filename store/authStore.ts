@@ -47,7 +47,6 @@ export const useAuthStore = create<AuthState>()(
               isLoggedIn: true,
               is_admin: res.data.is_admin,
               user_type: res.data.user_type,
-              loading: false,
             });
 
             await AsyncStorage.setItem(AUTH_TOKEN_NAME, res.data.access_token);
@@ -55,16 +54,14 @@ export const useAuthStore = create<AuthState>()(
 
             return true;
           }
-          useErrorStore.getState().clearError(); // Clear previous errors if login is successful
-          if (res.code === 401) {
-            useErrorStore.getState().setError(res.message || "Unauthorized");
-          }
 
+          useErrorStore.getState().setError(res);
           return false;
         } catch (error) {
-          set({ loading: false });
           console.log("Login error:", error);
           return false; // ❗ không throw nữa, để UI handle
+        } finally {
+          set({ loading: false });
         }
       },
 

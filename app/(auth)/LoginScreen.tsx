@@ -45,6 +45,11 @@ export default function LoginScreen() {
   }, [userForgotResponse, clearForgotResponse]);
 
   async function onLogin() {
+    if (!email.trim() || !password.trim()) {
+      errorStore.setError("Vui lòng nhập email và mật khẩu");
+      return;
+    }
+
     try {
       loading.setLoading(true);
 
