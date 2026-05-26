@@ -1,6 +1,8 @@
 import { useAuthStore } from "@/store/authStore";
+import { useErrorStore } from "@/store/errorStore";
 import { useLoadingStore } from "@/store/loadingStore";
 import { useUserStore } from "@/store/userStore";
+import { resolveEntryRoute } from "@/utils/sessionFlow";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, LockKeyhole, LogInIcon, Mail } from "lucide-react-native";
 import * as React from "react";
@@ -17,8 +19,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import ButtonComponent from "../components/ButtonComponent";
 import LinkComponent from "../components/LinkComponent";
-import { useErrorStore } from "@/store/errorStore";
-import { resolveEntryRoute } from "@/utils/sessionFlow";
 
 export default function LoginScreen() {
   const [email, setEmail] = React.useState("");
@@ -147,7 +147,12 @@ export default function LoginScreen() {
                   <TextInput
                     style={styles.input}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (errorStore.errorMessage) {
+                        errorStore.clearError();
+                      }
+                    }}
                     secureTextEntry={showPassword}
                   />
 
