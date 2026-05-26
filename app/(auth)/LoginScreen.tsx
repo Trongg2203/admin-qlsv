@@ -44,7 +44,22 @@ export default function LoginScreen() {
     }
   }, [userForgotResponse, clearForgotResponse]);
 
+  function validateLoginForm() {
+    errorStore.clearError();
+
+    if (!email.trim() || !password.trim()) {
+      errorStore.setError("Email và mật khẩu không được bỏ trống");
+      return false;
+    }
+
+    return true;
+  }
+
   async function onLogin() {
+    if (!validateLoginForm()) {
+      return;
+    }
+
     try {
       loading.setLoading(true);
 
@@ -108,7 +123,12 @@ export default function LoginScreen() {
                   <TextInput
                     style={styles.input}
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (errorStore.errorMessage) {
+                        errorStore.clearError();
+                      }
+                    }}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
