@@ -10,6 +10,7 @@ export interface Food {
   category_id?: string | number | null;
   calories?: number | string | null;
   image_url?: string | null;
+  thumb_image_url?: string | null;
 }
 
 export interface MealPlanDetail {

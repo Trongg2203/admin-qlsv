@@ -3,7 +3,8 @@ import { useProductStore } from "@/store/productStore";
 import { Product } from "@/typings/interfaces/product/product";
 import { resolveImageUrl } from "@/utils/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Image, View } from "react-native";
+import { Image } from "expo-image";
+import { Alert, View } from "react-native";
 import ToastManager from "toastify-react-native/components/ToastManager";
 import TableComponent, {
     Column,
@@ -82,6 +83,8 @@ export default function ProductManagementScreen() {
             borderRadius: 6,
             backgroundColor: "#f3f4f6",
           }}
+          contentFit="cover"
+          transition={150}
         />
       ),
     },

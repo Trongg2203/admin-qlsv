@@ -15,13 +15,13 @@ import { tabBarScrollY } from "@/utils/tabBarScroll";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -355,8 +355,10 @@ export default function DailyScreen() {
         <View style={styles.mealCard}>
           {resolveImageUrl(item.food?.image_url) ? (
             <Image
-              source={{ uri: resolveImageUrl(item.food?.image_url) }}
+              source={{ uri: resolveImageUrl(item.food?.thumb_image_url ?? item.food?.image_url) }}
               style={styles.mealImage}
+              contentFit="cover"
+              transition={150}
             />
           ) : (
             <View style={[styles.mealImage, styles.mealImagePlaceholder]}>
@@ -593,7 +595,7 @@ export default function DailyScreen() {
         onClose={handleCloseRatingModal}
         foodId={selectedFood?.food?.id ?? ""}
         foodName={selectedFood?.food?.name ?? ""}
-        foodImage={resolveImageUrl(selectedFood?.food?.image_url)}
+        foodImage={resolveImageUrl(selectedFood?.food?.thumb_image_url ?? selectedFood?.food?.image_url)}
         onSubmit={handleRatingSubmit}
       />
     </View>

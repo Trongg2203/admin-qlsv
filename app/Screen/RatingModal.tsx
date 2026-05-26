@@ -4,9 +4,9 @@ import { POSITION_TOAST } from "@/typings/types/PostionToast";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useState } from "react";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
-  Image,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -166,6 +166,8 @@ const RatingModal: React.FC<RatingModalProps> = ({
                 <Image
                   source={{ uri: getPrimaryImage() }}
                   style={styles.foodImage}
+                  contentFit="cover"
+                  transition={150}
                 />
               ) : (
                 <View style={styles.foodIconWrapper}>

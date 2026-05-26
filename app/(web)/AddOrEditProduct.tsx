@@ -8,9 +8,9 @@ import { MasterComponentItem } from "@/typings/types/form.types";
 import { resolveImageUrl } from "@/utils/image";
 import { ImagePlus, Trash2, X } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -339,6 +339,8 @@ export default function AddOrEditProduct({
                         borderRadius: 8,
                         backgroundColor: "#f3f4f6",
                       }}
+                      contentFit="cover"
+                      transition={150}
                     />
                     <TouchableOpacity
                       onPress={() => handleDeleteImage(img.id)}
